@@ -56,6 +56,10 @@ def classifier(prediction, t):
 
     # iterate through prediction and classify as
     # 1 or 0 according to given threshold
-    res.append([1 if x >= t else 0 for x in prediction])
+    for x in prediction:
+        if float(x) >= t:
+            res.append(1)
+        else:
+            res.append(0)
 
     return res
