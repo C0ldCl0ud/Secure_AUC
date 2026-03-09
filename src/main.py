@@ -60,9 +60,8 @@ def real_auc():
 
         data = data_loader.merge_df(labels, predictions)
         data = data_loader.split_df(data, 2)
-        print(data)
 
-
+        mpc.run_experiment(data)
 
         #auc_scikit = auc_analysis.calculate_auc_scikit(labels, predictions)
 

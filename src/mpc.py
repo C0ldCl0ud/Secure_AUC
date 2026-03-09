@@ -92,16 +92,7 @@ def run_experiment_approx(labels, predictions, threshold):
 
 
 @crypten.mpc.run_multiprocess(world_size=2)
-def run_experiment(labels, predictions, threshold):
-    if len(predictions) != len(labels):
-        raise Exception("Prediction and Reference have unequal length.")
-
-    def encrypt(vector):
-        # transform
-        values = vector.iloc[:, 0].tolist()
-        x = torch.tensor(values)
-        x_enc = crypten.cryptensor(x)
-        return x_enc
+def run_experiment(data):
 
     def sortMergeJoin(left_id, left_pred, right_id, right_pred):
         result = []
@@ -120,7 +111,24 @@ def run_experiment(labels, predictions, threshold):
             left_index += compare
             right_index += (1 - compare)
 
+            result.append(val.get_plain_text())
+        print(result)
 
+
+    left = data[0]
+    right = data[1]
+
+    left_id = left.index.tolist()
+    right_id = right.index.tolist()
+    left_pred = torch.tensor(left.iloc[:, 1].tolist())
+    right_pred = torch.tensor(right.iloc[:, 1].tolist())
+
+    left_id = crypten.cryptensor(torch.tensor(left_id))
+    right_id = crypten.cryptensor(torch.tensor(right_id))
+    left_pred = crypten.cryptensor(left_pred)
+    right_pred = crypten.cryptensor(right_pred)
+
+    sortMergeJoin(left_id, left_pred, right_id, right_pred)
 
     # def SEC_classifier(prediction, t):
     #     t = torch.tensor(t)
