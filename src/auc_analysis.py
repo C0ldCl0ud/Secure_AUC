@@ -23,8 +23,7 @@ def calcROC(prediction, truth, t):
     classified = classifier(prediction, t)
 
     if len(prediction) != len(truth):
-        print("Prediction and Reference have unequal length.")
-        return
+        raise Exception("Prediction and Reference have unequal length.")
 
     # compare classified to truth/ref and calc TP/TN/FP/FN
     for i in range(len(prediction)):
