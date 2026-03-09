@@ -35,9 +35,11 @@ def calcROC(prediction, truth, t):
         raise Exception("Prediction and Reference have unequal length.")
 
     # compare classified to truth/ref and calc TP/TN/FP/FN
+    print(classified)
+    print(truth.iloc[:,0])
     for i in range(len(prediction)):
-        if classified[i] == truth[i]:
-           if truth[i] == 1:
+        if classified[i] == truth.iloc[i,0]:
+           if truth.iloc[i,0] == 1:
                result.TP += 1
            else:
                result.TN += 1
@@ -48,6 +50,10 @@ def calcROC(prediction, truth, t):
                 result.FN += 1
 
     # calculate TPR & FPR
+    print("TP: ", result.TP)
+    print("FP: ", result.FP)
+    print("FN: ", result.FN)
+    print("TN: ", result.TN)
     result.TPR = result.TP / (result.TP + result.FN)
     result.FPR = result.FP / (result.TN + result.FP)
 
@@ -65,8 +71,8 @@ def classifier(prediction, t):
 
     # iterate through prediction and classify as
     # 1 or 0 according to given threshold
-    for x in prediction:
-        if float(x) >= t:
+    for x in prediction.iloc[:, 0]:
+        if x >= t:
             res.append(1)
         else:
             res.append(0)
@@ -86,16 +92,16 @@ def calculate_scilearn_all_auc():
 
         calculate_auc_scikit(labels, prediction)
 
-        fpr, tpr = roc_curve(labels, prediction)
+        fpr, tpr, threshold = roc_curve(labels, prediction)
         utils.plot_roc(fpr, tpr)
 
         fpr, tpr = [], []
         for t in thresholds:
-            statistics = calcROC(labels, prediction, t)
+            statistics = calcROC(prediction, labels, t)
             fpr.append(statistics.FPR)
             tpr.append(statistics.TPR)
         utils.plot_roc(fpr, tpr)
 
-
+calculate_scilearn_all_auc()
 
 
