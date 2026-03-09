@@ -1,7 +1,16 @@
 from dataclasses import dataclass
 import pandas as pd
-from sklearn.metrics import roc_curve
+from sklearn.metrics import roc_curve, roc_auc_score
+import data_loader
+import utils
 
+
+paths = {
+    "../data/labels_100.txt": "../data/pred_cons_100.txt",
+    "../data/labels_1000.txt": "../data/pred_cons_1000.txt",
+    "../data/labels_10000.txt": "../data/pred_cons_10000.txt",
+    "../data/labels_100000.txt": "../data/pred_cons_100000.txt",
+}
 
 @dataclass
 class statistics:
@@ -63,3 +72,30 @@ def classifier(prediction, t):
             res.append(0)
 
     return res
+thresholds = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
+
+def calculate_auc_scikit(truth, prediction):
+    auc = roc_auc_score(truth, prediction)
+    print("AUC: ", auc)
+
+def calculate_scilearn_all_auc():
+
+    for labels, prediction in paths.items():
+        labels = data_loader.load_data(labels)
+        prediction = data_loader.load_data(prediction)
+
+        calculate_auc_scikit(labels, prediction)
+
+        fpr, tpr = roc_curve(labels, prediction)
+        utils.plot_roc(fpr, tpr)
+
+        fpr, tpr = [], []
+        for t in thresholds:
+            statistics = calcROC(labels, prediction, t)
+            fpr.append(statistics.FPR)
+            tpr.append(statistics.TPR)
+        utils.plot_roc(fpr, tpr)
+
+
+
+
