@@ -3,23 +3,15 @@ import torch
 
 from src.auc_analysis import statistics, classifier
 
-
-def encrypt(vector, parties=2):
-
+@crypten.mpc.run_multiprocess(world_size=2)
+def encrypt(vector):
     # transform
     values = vector.iloc[:, 0].tolist()
+    x = torch.tensor(values)
+    x_enc = crypten.cryptensor(x)
+    return x_enc
 
-    @crypten.mpc.run_multiprocess(world_size=parties)
-    def encr(values):
-        x = torch.tensor(values)
-        x_enc = crypten.cryptensor(x)
-        return x_enc
-
-    res = encr(values)
-
-    return res
-
-
+@crypten.mpc.run_multiprocess(world_size=2)
 def SEC_calcROC(prediction, truth, t):
     TP = 0
     TN = 0
