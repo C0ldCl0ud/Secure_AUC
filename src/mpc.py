@@ -20,7 +20,7 @@ def encrypt(vector, parties=2):
     return res
 
 
-def SEC_rocCalc(prediction, truth, t):
+def SEC_calcROC(prediction, truth, t):
     TP = 0
     TN = 0
     FP = 0
