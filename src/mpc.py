@@ -100,9 +100,6 @@ def run_experiment(data):
         left_index = 0
         right_index = 0
 
-        left_index = crypten.cryptensor(torch.tensor([left_index]))
-        right_index = crypten.cryptensor(torch.tensor([right_index]))
-
         for _ in range(100):
             compare = left_pred[left_index] >= right_pred[right_index]
 
