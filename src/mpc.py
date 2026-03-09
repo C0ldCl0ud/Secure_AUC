@@ -49,6 +49,15 @@ def run_experiment(labels, predictions, threshold):
             sum += (part1 * part2) / 2
         crypten.print("sum", sum.get_plain_text())
 
+    def newton_raphson(x, a, b, num=2):
+
+        for i in range(num):
+            temp = x * b
+            temp = 2 - temp
+            x = x * temp
+
+        return x * a
+
     labels_enc = encrypt(labels)
     predictions_enc = encrypt(predictions)
 
@@ -72,13 +81,20 @@ def run_experiment(labels, predictions, threshold):
         # calculate TPR & FPR
         crypten.print("values", sec_values.get_plain_text())
         #TP, TN, FP, FN = sec_values.get_plain_text()
-        TPR = sec_values[0] / (sec_values[0] + sec_values[3])
-        FPR = sec_values[2] / (sec_values[2] + sec_values[1])
+        #TPR = sec_values[0] / (sec_values[0] + sec_values[3])
+        #FPR = sec_values[2] / (sec_values[2] + sec_values[1])
+        TPR = newton_raphson(0.002, sec_values[0], (sec_values[0] + sec_values[3]) )
+        FPR = newton_raphson(0.002, sec_values[2], (sec_values[2] + sec_values[1]) )
+
 
         fpr.append(FPR)
         tpr.append(TPR)
-        print(f"TPR: {TPR}, FPR: {FPR}")
+        print(f"TPR: {TPR.get_plain_text()}, FPR: {FPR.get_plain_text()}")
 
     compute_AUC(fpr, tpr)
+
+
+
+
 
 
