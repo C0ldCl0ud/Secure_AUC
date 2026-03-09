@@ -52,7 +52,8 @@ def SEC_calcROC(prediction, truth, t):
 @crypten.mpc.run_multiprocess(world_size=2)
 def SEC_classifier(prediction, t):
 
-    t = torch.tensor([t])
+    t_list = [t for _ in range(len(prediction))]
+    t = torch.tensor(t_list)
     t_enc = cryptensor(t)
 
     # iterate through prediction and classify as
