@@ -62,6 +62,8 @@ def real_auc():
         data = data_loader.split_df(data, 2)
 
 
+
+
         #auc_scikit = auc_analysis.calculate_auc_scikit(labels, predictions)
 
         #threshold = [1,0.8,0.6,0.4,0.2,0]
