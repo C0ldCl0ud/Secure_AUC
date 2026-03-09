@@ -22,11 +22,14 @@ import torch
 #device = torch.device("cpu")
 #print(f"Using device: {device}")
 
-paths = {
+paths_full = {
     "../data/labels_100.txt": "../data/pred_cons_100.txt",
     "../data/labels_1000.txt": "../data/pred_cons_1000.txt",
     "../data/labels_10000.txt": "../data/pred_cons_10000.txt",
     "../data/labels_100000.txt": "../data/pred_cons_100000.txt",
+}
+paths_demo = {
+    "../data/labels_100.txt": "../data/pred_cons_100.txt"
 }
 
 def main():
@@ -44,7 +47,7 @@ def main():
         for t in threshold:
             mpc.run_experiment(labels, predictions, t)
 
-    for labels, predictions in paths.items():
+    for labels, predictions in paths_demo.items():
         auc(labels, predictions)
 
 
