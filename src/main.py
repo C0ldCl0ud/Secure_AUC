@@ -15,6 +15,9 @@ multiprocessing.set_start_method("fork", force=True)
 
 import crypten
 import torch
+#os.environ["CUDA_VISIBLE_DEVICES"] = ","
+#device = torch.device("cpu")
+#print(f"Using device: {device}")
 
 def main():
     pass
