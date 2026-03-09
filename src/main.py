@@ -9,7 +9,9 @@
 
 where does dp fit in?
 """
+import auc_analysis
 import data_loader
+import mpc
 import utils
 import multiprocessing
 multiprocessing.set_start_method("fork", force=True)
@@ -28,9 +30,25 @@ paths = {
 }
 
 def main():
+    def auc(labels, predictions):
+
+        print(f"Lade Daten aus: {labels}")
+        labels = data_loader.load_data(labels)
+
+        print(f"Lade Daten aus: {predictions}")
+        predictions = data_loader.load_data(predictions)
+        labels_enc = mpc.encrypt(labels)
+        predictions_enc = mpc.encrypt(predictions)
+
+        auc_scikit = auc_analysis.calculate_auc_scikit(labels, predictions)
+
     for labels, predictions in paths.items():
-        labels = data_loader.load_data(paths)
-        predictions = data_loader.load_data(paths)
+        auc(labels, predictions)
+
+
+
+
+
 
 
 
