@@ -60,7 +60,7 @@ def real_auc():
 
         data = data_loader.merge_df(labels, predictions)
         data = data_loader.split_df(data, 2)
-
+        print(data)
 
 
 
