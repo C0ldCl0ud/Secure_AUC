@@ -10,9 +10,8 @@ def merge_df(df1, df2):
 
 def split_df(df, number_of_splits):
     dataframes = []
-    choices = np.random.choice(len(df), len(df), replace=False)
     for i in range(number_of_splits):
-        dataframe = df.iloc[choices[i::number_of_splits]]
-        print(dataframe)
+        dataframe = df.iloc[i::number_of_splits]
         dataframes.append(dataframe)
     return dataframes
+
