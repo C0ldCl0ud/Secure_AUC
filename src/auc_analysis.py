@@ -5,12 +5,7 @@ import data_loader
 import utils
 
 
-paths = {
-    "../data/labels_100.txt": "../data/pred_cons_100.txt",
-    "../data/labels_1000.txt": "../data/pred_cons_1000.txt",
-    "../data/labels_10000.txt": "../data/pred_cons_10000.txt",
-    "../data/labels_100000.txt": "../data/pred_cons_100000.txt",
-}
+
 
 @dataclass
 class statistics:
