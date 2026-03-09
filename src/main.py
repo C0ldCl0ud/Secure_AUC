@@ -32,7 +32,7 @@ paths_demo = {
     "../data/labels_1000.txt": "../data/pred_cons_1000.txt"
 }
 
-def main():
+def approx_auc():
     def auc(labels, predictions):
 
         print(f"Lade Daten aus: {labels}")
@@ -49,5 +49,26 @@ def main():
     for labels, predictions in paths_demo.items():
         auc(labels, predictions)
 
+def real_auc():
+    def auc(labels, predictions):
+
+        print(f"Lade Daten aus: {labels}")
+        labels = data_loader.load_data(labels)
+
+        print(f"Lade Daten aus: {predictions}")
+        predictions = data_loader.load_data(predictions)
+
+        data = data_loader.merge_df(labels, predictions)
+        data = data_loader.split_df(data, 2)
+
+
+        #auc_scikit = auc_analysis.calculate_auc_scikit(labels, predictions)
+
+        #threshold = [1,0.8,0.6,0.4,0.2,0]
+        #mpc.run_experiment(labels, predictions, threshold)
+    for labels, predictions in paths_demo.items():
+        auc(labels, predictions)
+
 if __name__ == '__main__':
-    main()
+    #approx_auc()
+    real_auc()
