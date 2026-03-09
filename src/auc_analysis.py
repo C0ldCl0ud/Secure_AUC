@@ -73,13 +73,14 @@ def classifier(prediction, t):
             res.append(0)
 
     return res
+
 thresholds = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
 
 def calculate_auc_scikit(truth, prediction):
     auc = roc_auc_score(truth, prediction)
     print("AUC: ", auc)
 
-def calculate_scilearn_all_auc():
+def calculate_scilearn_all_auc(paths):
 
     for labels, prediction in paths.items():
         labels = data_loader.load_data(labels)
@@ -97,6 +98,5 @@ def calculate_scilearn_all_auc():
             tpr.append(statistics.TPR)
         utils.plot_roc(fpr, tpr)
 
-calculate_scilearn_all_auc()
 
 

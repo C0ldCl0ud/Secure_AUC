@@ -42,6 +42,12 @@ def main():
 
         auc_scikit = auc_analysis.calculate_auc_scikit(labels, predictions)
 
+        threshold = [0, 0.2, 0.5, 1]
+
+        for t in threshold:
+            mpc.SEC_rocCalc(predictions_enc, labels_enc, t)
+
+
     for labels, predictions in paths.items():
         auc(labels, predictions)
 
