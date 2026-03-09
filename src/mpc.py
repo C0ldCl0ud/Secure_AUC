@@ -4,16 +4,44 @@ from crypten import cryptensor
 
 from src.auc_analysis import statistics, classifier
 
-@crypten.mpc.run_multiprocess(world_size=2)
-def encrypt(vector):
-    # transform
-    values = vector.iloc[:, 0].tolist()
-    x = torch.tensor(values)
-    x_enc = crypten.cryptensor(x)
-    return x_enc
+
+
+
+
+# compare = x[i] <= y[i]
+#
+# classification = 1 * compare + 0 * (1-compare)
 
 @crypten.mpc.run_multiprocess(world_size=2)
-def SEC_calcROC(prediction, truth, t):
+def run_experiment(labels, predictions, threshold):
+    if len(predictions) != len(labels):
+        raise Exception("Prediction and Reference have unequal length.")
+
+    def encrypt(vector):
+        # transform
+        values = vector.iloc[:, 0].tolist()
+        x = torch.tensor(values)
+        x_enc = crypten.cryptensor(x)
+        return x_enc
+
+    def SEC_classifier(prediction, t):
+        t = torch.tensor(t)
+        t_enc = cryptensor(t)
+
+        # iterate through prediction and classify as
+        # 1 or 0 according to given threshold
+        # for x in prediction:
+        #    compare = x >= t_enc
+        #    classification = 1 * compare + 0 * (1-compare)
+        #    res.append(classification)
+
+        compare = prediction >= t_enc
+
+        return compare
+
+    labels_enc = encrypt(labels)
+    predictions_enc = encrypt(predictions)
+
     TP = 0
     TN = 0
     FP = 0
@@ -21,20 +49,13 @@ def SEC_calcROC(prediction, truth, t):
     values = torch.tensor([TP, TN, FP, FN])
     sec_values = crypten.cryptensor(values)
 
-    # apply classifier
-    classified = SEC_classifier(prediction, t)
+    classified = SEC_classifier(predictions_enc, threshold)
 
-    if len(prediction) != len(truth):
-        raise Exception("Prediction and Reference have unequal length.")
-
-    # compare classified to truth/ref and calc TP/TN/FP/FN
-    #print(classified)
-    #print(truth.iloc[:, 0])
-    for i in range(len(prediction)):
-        sec_values[0] += truth[i] * classified[i]
-        sec_values[1] += (1 - truth[i]) * (1 - classified[i])
-        sec_values[2] += (1 - truth[i]) * classified[i]
-        sec_values[3] += truth[i] * (1 - classified[i])
+    for i in range(len(predictions)):
+        sec_values[0] += labels_enc[i] * classified[i]
+        sec_values[1] += (1 - labels_enc[i]) * (1 - classified[i])
+        sec_values[2] += (1 - labels_enc[i]) * classified[i]
+        sec_values[3] += labels_enc[i] * (1 - classified[i])
 
     # calculate TPR & FPR
     crypten.print("values", sec_values.get_plain_text())
@@ -43,30 +64,5 @@ def SEC_calcROC(prediction, truth, t):
 
     crypten.print("TPR", TPR.get_plain_text())
     crypten.print("FPR", FPR.get_plain_text())
-    # put together as ROC-DF
-    #result.ROC_df.assign(FPR=result.FPR, TPR=result.TPR)
-
-    return 0
 
 
-@crypten.mpc.run_multiprocess(world_size=2)
-def SEC_classifier(prediction, t):
-
-    t_list = [t for _ in range(len(prediction))]
-    t = torch.tensor(t_list)
-    t_enc = cryptensor(t)
-
-    # iterate through prediction and classify as
-    # 1 or 0 according to given threshold
-    #for x in prediction:
-    #    compare = x >= t_enc
-    #    classification = 1 * compare + 0 * (1-compare)
-    #    res.append(classification)
-
-    compare = prediction >= t_enc
-
-    return compare
-
-# compare = x[i] <= y[i]
-#
-# classification = 1 * compare + 0 * (1-compare)

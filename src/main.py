@@ -37,16 +37,12 @@ def main():
 
         print(f"Lade Daten aus: {predictions}")
         predictions = data_loader.load_data(predictions)
-        labels_enc = mpc.encrypt(labels)
-        predictions_enc = mpc.encrypt(predictions)
 
         auc_scikit = auc_analysis.calculate_auc_scikit(labels, predictions)
 
         threshold = [0, 0.2, 0.5, 1]
-
         for t in threshold:
-            mpc.SEC_rocCalc(predictions_enc, labels_enc, t)
-
+            mpc.run_experiment(labels, predictions, t)
 
     for labels, predictions in paths.items():
         auc(labels, predictions)
