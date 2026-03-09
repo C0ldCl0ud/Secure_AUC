@@ -29,7 +29,7 @@ def calcROC(prediction, truth, t):
     # compare classified to truth/ref and calc TP/TN/FP/FN
     for i in range(len(prediction)):
         if classified[i] == truth[i]:
-           if truth[i] == 0:
+           if truth[i] == 1:
                result.TP += 1
            else:
                result.TN += 1
