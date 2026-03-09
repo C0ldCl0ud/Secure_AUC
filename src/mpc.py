@@ -72,8 +72,8 @@ def run_experiment(labels, predictions, threshold):
         # calculate TPR & FPR
         crypten.print("values", sec_values.get_plain_text())
         #TP, TN, FP, FN = sec_values.get_plain_text()
-        TPR = TP / (TP + FN)
-        FPR = FP / (FP + TN)
+        TPR = sec_values[0] / (sec_values[0] + sec_values[3])
+        FPR = sec_values[2] / (sec_values[2] + sec_values[1])
 
         fpr.append(FPR)
         tpr.append(TPR)

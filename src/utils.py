@@ -1,4 +1,3 @@
-
 import matplotlib.pyplot as plt
 
 def secure_sort(x_enc):
