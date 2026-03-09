@@ -29,7 +29,7 @@ paths_full = {
     "../data/labels_100000.txt": "../data/pred_cons_100000.txt",
 }
 paths_demo = {
-    "../data/labels_100.txt": "../data/pred_cons_100.txt"
+    "../data/labels_1000.txt": "../data/pred_cons_1000.txt"
 }
 
 def main():
@@ -43,19 +43,11 @@ def main():
 
         auc_scikit = auc_analysis.calculate_auc_scikit(labels, predictions)
 
-        threshold = [0, 0.2, 0.5, 1]
-        for t in threshold:
-            mpc.run_experiment(labels, predictions, t)
+        threshold = [1,0.8,0.6,0.4,0.2,0]
+        mpc.run_experiment(labels, predictions, threshold)
 
     for labels, predictions in paths_demo.items():
         auc(labels, predictions)
-
-
-
-
-
-
-
 
 if __name__ == '__main__':
     main()

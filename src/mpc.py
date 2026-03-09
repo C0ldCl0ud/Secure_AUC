@@ -39,30 +39,46 @@ def run_experiment(labels, predictions, threshold):
 
         return compare
 
+    def compute_AUC(fpr, tpr):
+        sum = crypten.cryptensor(torch.tensor([0]))
+        for i in range(1, len(tpr)):
+            part1 = tpr[i]+tpr[i-1]
+            part2 = fpr[i]-fpr[i-1]
+            #print(part1.get_plain_text())
+            #print(part2.get_plain_text())
+            sum += (part1 * part2) / 2
+        crypten.print("sum", sum.get_plain_text())
+
     labels_enc = encrypt(labels)
     predictions_enc = encrypt(predictions)
 
-    TP = 0
-    TN = 0
-    FP = 0
-    FN = 0
-    values = torch.tensor([TP, TN, FP, FN])
-    sec_values = crypten.cryptensor(values)
+    fpr, tpr = [], []
 
-    classified = SEC_classifier(predictions_enc, threshold)
+    for t in threshold:
+        TP = 0
+        TN = 0
+        FP = 0
+        FN = 0
+        values = torch.tensor([TP, TN, FP, FN])
+        sec_values = crypten.cryptensor(values)
 
-    for i in range(len(predictions)):
-        sec_values[0] += labels_enc[i] * classified[i]
-        sec_values[1] += (1 - labels_enc[i]) * (1 - classified[i])
-        sec_values[2] += (1 - labels_enc[i]) * classified[i]
-        sec_values[3] += labels_enc[i] * (1 - classified[i])
+        classified = SEC_classifier(predictions_enc, t)
+        for i in range(len(predictions)):
+            sec_values[0] += labels_enc[i] * classified[i] #TP
+            sec_values[1] += (1 - labels_enc[i]) * (1 - classified[i]) #TN
+            sec_values[2] += (1 - labels_enc[i]) * classified[i] #FP
+            sec_values[3] += labels_enc[i] * (1 - classified[i]) #FN
 
-    # calculate TPR & FPR
-    crypten.print("values", sec_values.get_plain_text())
-    TPR = sec_values[0] / (sec_values[0] + sec_values[3])
-    FPR = sec_values[2] / (sec_values[2] + sec_values[1])
+        # calculate TPR & FPR
+        crypten.print("values", sec_values.get_plain_text())
+        #TP, TN, FP, FN = sec_values.get_plain_text()
+        TPR = TP / (TP + FN)
+        FPR = FP / (FP + TN)
 
-    crypten.print("TPR", TPR.get_plain_text())
-    crypten.print("FPR", FPR.get_plain_text())
+        fpr.append(FPR)
+        tpr.append(TPR)
+        print(f"TPR: {TPR}, FPR: {FPR}")
+
+    compute_AUC(fpr, tpr)
 
 
