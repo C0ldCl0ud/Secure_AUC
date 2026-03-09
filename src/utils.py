@@ -1,3 +1,6 @@
+
+import matplotlib.pyplot as plt
+
 def secure_sort(x_enc):
     result = x_enc
     n = len(result)
@@ -15,3 +18,16 @@ def secure_sort(x_enc):
             result[j + 1] = new_right
 
     return result
+
+def plot_roc(fpr, tpr, name="ROC"):
+    plt.figure(figsize=(8, 6))
+
+    plt.plot(fpr, tpr, label=f"{name}")
+
+    plt.plot([0, 1], [0, 1], "k--")
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
+    plt.title("ROC Curves")
+    plt.legend()
+    #plt.grid(True)
+    plt.show()
