@@ -1,4 +1,5 @@
 import crypten
+import numpy as np
 import pandas as pd
 import torch
 from crypten import cryptensor
@@ -68,6 +69,9 @@ def run_experiment_approx(labels, predictions, threshold):
         sec_values = crypten.cryptensor(values)
 
         classified = SEC_classifier(predictions_enc, t)
+
+
+
         for i in range(len(predictions)):
             sec_values[0] += labels_enc[i] * classified[i] #TP
             sec_values[1] += (1 - labels_enc[i]) * (1 - classified[i]) #TN
@@ -94,23 +98,28 @@ def run_experiment_approx(labels, predictions, threshold):
 @crypten.mpc.run_multiprocess(world_size=2)
 def run_experiment(data):
 
-    def sortMergeJoin(left_id, left_pred, right_id, right_pred):
-        result = []
+    def sortMergeJoin(left_label, left_pred, right_label, right_pred):
+        predictions = torch.tensor(np.zeros(len(left_pred)+len(right_pred)))
+        predictions = crypten.cryptensor(predictions)
+        labels = torch.tensor(np.zeros(len(predictions)))
+        labels = crypten.cryptensor(labels)
 
         left_index = 0
         right_index = 0
+        counter = 0
 
         while left_index < len(left_pred) and right_index < len(right_pred):
 
             compare = left_pred[left_index] >= right_pred[right_index]
-            val = compare * left_pred[left_index] + (1-compare) * right_pred[right_index]
-            result.append(val.get_plain_text())
+            predictions[counter] = compare * left_pred[left_index] + (1-compare) * right_pred[right_index]
+            labels[counter] = compare * left_label[left_index] + (1-compare) * right_label[right_index]
 
             compare = compare.get_plain_text()
             left_index += compare
             right_index += (1 - compare)
+            counter += 1
 
-        crypten.print(result)
+        return labels, predictions
 
 
     left = data[0]
@@ -118,17 +127,43 @@ def run_experiment(data):
     right = data[1]
     crypten.print(right)
 
-    left_id = left.index.tolist()
-    right_id = right.index.tolist()
+    left_label = torch.tensor(left.iloc[:, 0].tolist())
+    right_label = torch.tensor(right.iloc[:, 0].tolist())
     left_pred = torch.tensor(left.iloc[:, 1].tolist())
     right_pred = torch.tensor(right.iloc[:, 1].tolist())
 
-    left_id = crypten.cryptensor(torch.tensor(left_id))
-    right_id = crypten.cryptensor(torch.tensor(right_id))
+    left_label = crypten.cryptensor(left_label)
+    right_label = crypten.cryptensor(right_label)
     left_pred = crypten.cryptensor(left_pred)
     right_pred = crypten.cryptensor(right_pred)
 
-    sortMergeJoin(left_id, left_pred, right_id, right_pred)
+    labels_enc, predictions_enc = sortMergeJoin(left_label, left_pred, right_label, right_pred)
+
+    TP = torch.tensor(np.zeros(len(predictions_enc)))
+    TN = torch.tensor(np.zeros(len(predictions_enc)))
+    FP = torch.tensor(np.zeros(len(predictions_enc)))
+    FN = torch.tensor(np.zeros(len(predictions_enc)))
+
+    TP = crypten.cryptensor(TP)
+    TN = crypten.cryptensor(TN)
+    FP = crypten.cryptensor(FP)
+    FN = crypten.cryptensor(FN)
+
+    for i in range(len(predictions_enc)):
+        classifications = predictions_enc >= predictions_enc[i]
+        TP_class = labels_enc * classifications
+        TP[i] =  TP_class.sum()
+        TN_class = (1-labels_enc) * (1-classifications)
+        TN[i] = TN_class.sum()
+        FP_class = (1 - labels_enc) * classifications #FP
+        FP[i] = FP_class.sum()
+        FN_class = labels_enc * (1 - classifications) #FN
+        FN[i] = FN_class.sum()
+
+    crypten.print(TP.get_plain_text())
+    crypten.print(TN.get_plain_text())
+    crypten.print(FP.get_plain_text())
+    crypten.print(FN.get_plain_text())
 
     # def SEC_classifier(prediction, t):
     #     t = torch.tensor(t)
