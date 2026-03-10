@@ -31,7 +31,7 @@ paths_full = {
     "../data/labels_100000.txt": "../data/pred_cons_100000.txt",
 }
 paths_demo = {
-    "../data/labels_100.txt": "../data/pred_cons_100.txt"
+    "../data/labels_100000.txt": "../data/pred_cons_100000.txt"
 }
 
 def approx_auc(paths, n_steps=100):
@@ -51,6 +51,7 @@ def approx_auc(paths, n_steps=100):
         auc_scikit = auc_analysis.calculate_auc_scikit(labels, predictions)
 
     for labels, predictions in paths.items():
+        print("-------------------------------------------------------------------------")
         auc(labels, predictions)
 
 
@@ -72,10 +73,9 @@ def real_auc(paths):
         auc_scikit = auc_analysis.calculate_auc_scikit(labels, predictions)
 
     for labels, predictions in paths.items():
+        print("-------------------------------------------------------------------------")
         auc(labels, predictions)
 
 if __name__ == '__main__':
-    print("-------------------------------------------------------------------------")
-    approx_auc(paths_full)
-    #print("-------------------------------------------------------------------------")
+    approx_auc(paths_demo, 2500)
     #real_auc()
