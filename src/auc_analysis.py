@@ -79,6 +79,7 @@ thresholds = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
 def calculate_auc_scikit(truth, prediction):
     auc = roc_auc_score(truth, prediction)
     print("AUC: ", auc)
+    return auc
 
 def calculate_scilearn_all_auc(paths):
 
