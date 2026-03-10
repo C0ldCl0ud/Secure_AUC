@@ -32,7 +32,7 @@ def run_experiment_approx(labels, predictions, thresholds):
         for i in range(1, len(tpr)):
             part1 = tpr[i]+tpr[i-1]
             part2 = fpr[i]-fpr[i-1]
-            sum += (part1 * part2) / 2
+            sum += (part1 * part2) * 0.5
         crypten.print("sum", sum.get_plain_text())
 
     def newton_raphson(x, a, b, num=5):
@@ -104,7 +104,7 @@ def run_experiment(data):
         for i in range(1, len(tpr)):
             part1 = tpr[i]+tpr[i-1]
             part2 = fpr[i]-fpr[i-1]
-            sum += (part1 * part2) / 2
+            sum += (part1 * part2) * 0.5
         crypten.print("sum", sum.get_plain_text())
 
     def sortMergeJoin(left_label, left_pred, right_label, right_pred):
