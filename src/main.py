@@ -16,6 +16,7 @@ import utils
 import multiprocessing
 multiprocessing.set_start_method("fork", force=True)
 import time
+import numpy as np
 
 import crypten
 import torch
@@ -30,12 +31,10 @@ paths_full = {
     "../data/labels_100000.txt": "../data/pred_cons_100000.txt",
 }
 paths_demo = {
-    "../data/labels_1000.txt": "../data/pred_cons_1000.txt"
+    "../data/labels_100.txt": "../data/pred_cons_100.txt"
 }
 
-def approx_auc():
-
-    start = time.time()
+def approx_auc(paths, n_steps=100):
 
     def auc(labels, predictions):
 
@@ -46,24 +45,17 @@ def approx_auc():
         print(f"Lade Daten aus: {predictions}")
         predictions = data_loader.load_data(predictions)
 
+        thresholds = np.linspace(1, 0, n_steps)
+
+        mpc.run_experiment_approx(labels, predictions, thresholds)
         auc_scikit = auc_analysis.calculate_auc_scikit(labels, predictions)
 
-        threshold = [1,0.8,0.6,0.4,0.2,0]
-        mpc.run_experiment(labels, predictions, threshold)
-
-    for labels, predictions in paths_demo.items():
+    for labels, predictions in paths.items():
         auc(labels, predictions)
 
-    end = time.time()
 
-    # get the execution time
-    time_overall = end - start
 
-    print('Execution time:', time_overall, 'seconds')
-
-def real_auc():
-
-    start1 = time.time()
+def real_auc(paths):
 
     def auc(labels, predictions):
 
@@ -77,18 +69,13 @@ def real_auc():
         data = data_loader.split_df(data, 2)
 
         mpc.run_experiment(data)
-
         auc_scikit = auc_analysis.calculate_auc_scikit(labels, predictions)
-        print(auc_scikit)
 
-    for labels, predictions in paths_demo.items():
+    for labels, predictions in paths.items():
         auc(labels, predictions)
 
-    end1 = time.time()
-    time_overall1 = end1 - start1
-
-    print('Execution time:', time_overall1, 'seconds')
-
 if __name__ == '__main__':
-    #approx_auc()
-    real_auc()
+    print("-------------------------------------------------------------------------")
+    approx_auc(paths_full)
+    #print("-------------------------------------------------------------------------")
+    #real_auc()
