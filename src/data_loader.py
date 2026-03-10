@@ -22,7 +22,5 @@ def split_shuffled_df(df, number_of_splits):
     for i in range(number_of_splits):
         split[i] = split[i].iloc[split[i].iloc[:, 1].argsort()[::-1]]
 
-        print(split[i])
-
     return split
 
