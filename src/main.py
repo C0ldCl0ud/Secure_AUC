@@ -13,6 +13,7 @@ import pandas as pd
 
 import auc_analysis
 import data_loader
+import dp
 import mpc
 import utils
 import multiprocessing
@@ -33,7 +34,7 @@ paths_full = {
     "../data/labels_100000.txt": "../data/pred_cons_100000.txt",
 }
 paths_demo = {
-    "../data/labels_100000.txt": "../data/pred_cons_100000.txt"
+    "../data/labels_100.txt": "../data/pred_cons_100.txt"
 }
 
 def approx_auc(paths, n_steps=100):
@@ -56,6 +57,8 @@ def approx_auc(paths, n_steps=100):
         mpc.run_experiment_approx(labels, predictions, thresholds)
         auc_scikit = auc_analysis.calculate_auc_scikit(labels, predictions)
 
+        #dp.differential_auc_approx(labels, predictions, thresholds)
+
     for labels, predictions in paths.items():
         print("-------------------------------------------------------------------------")
         auc(labels, predictions)
@@ -73,7 +76,7 @@ def real_auc(paths):
         predictions = data_loader.load_data(predictions)
 
         data = data_loader.merge_df(labels, predictions)
-        data = data_loader.split_df(data, 2)
+        data = data_loader.split_shuffled_df(data, 2)
 
         mpc.run_experiment(data)
         auc_scikit = auc_analysis.calculate_auc_scikit(labels, predictions)
@@ -83,5 +86,5 @@ def real_auc(paths):
         auc(labels, predictions)
 
 if __name__ == '__main__':
-    approx_auc(paths_demo, 100)
+    approx_auc(paths_demo, 2500)
     #real_auc()
