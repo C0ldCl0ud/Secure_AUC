@@ -100,20 +100,23 @@ def run_experiment(data):
         left_index = 0
         right_index = 0
 
-        for _ in range(100):
+        while left_index < len(left_pred) and right_index < len(right_pred):
+
             compare = left_pred[left_index] >= right_pred[right_index]
-
             val = compare * left_pred[left_index] + (1-compare) * right_pred[right_index]
+            result.append(val.get_plain_text())
 
+            compare = compare.get_plain_text()
             left_index += compare
             right_index += (1 - compare)
 
-            result.append(val.get_plain_text())
-        print(result)
+        crypten.print(result)
 
 
     left = data[0]
+    crypten.print(left)
     right = data[1]
+    crypten.print(right)
 
     left_id = left.index.tolist()
     right_id = right.index.tolist()
