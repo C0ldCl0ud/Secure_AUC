@@ -9,6 +9,8 @@
 
 where does dp fit in?
 """
+import pandas as pd
+
 import auc_analysis
 import data_loader
 import mpc
@@ -31,7 +33,7 @@ paths_full = {
     "../data/labels_100000.txt": "../data/pred_cons_100000.txt",
 }
 paths_demo = {
-    "../data/labels_100.txt": "../data/pred_cons_100.txt"
+    "../data/labels_100000.txt": "../data/pred_cons_100000.txt"
 }
 
 def approx_auc(paths, n_steps=100):
@@ -44,6 +46,10 @@ def approx_auc(paths, n_steps=100):
 
         print(f"Lade Daten aus: {predictions}")
         predictions = data_loader.load_data(predictions)
+
+        data = data_loader.merge_df(labels, predictions)
+        data = data.sample(frac=1)
+        labels, predictions = pd.DataFrame(data.iloc[:,0]), pd.DataFrame(data.iloc[:,1])
 
         thresholds = np.linspace(1, 0, n_steps)
 
@@ -77,5 +83,5 @@ def real_auc(paths):
         auc(labels, predictions)
 
 if __name__ == '__main__':
-    approx_auc(paths_demo, 2500)
+    approx_auc(paths_demo, 100)
     #real_auc()

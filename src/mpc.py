@@ -19,24 +19,18 @@ def run_experiment_approx(labels, predictions, thresholds):
         x_enc = crypten.cryptensor(x)
         return x_enc
 
-    def SEC_classifier(prediction, t):
-        t = torch.tensor(t)
-        t_enc = cryptensor(t)
-
-        compare = prediction >= t_enc
-
-        return compare
-
     def compute_AUC(fpr, tpr):
         sum = crypten.cryptensor(torch.tensor([0]))
+        crypten.print(fpr.get_plain_text())
+        crypten.print(tpr.get_plain_text())
         for i in range(1, len(tpr)):
             part1 = tpr[i]+tpr[i-1]
             part2 = fpr[i]-fpr[i-1]
             sum += (part1 * part2) * 0.5
-        crypten.print("sum", sum.get_plain_text())
+        crypten.print("partial sum", sum.get_plain_text())
+        return sum * 0.01
 
     def newton_raphson(x, a, b, num=5):
-
         for i in range(num):
             temp = x * b
             temp = 2 - temp
@@ -47,38 +41,44 @@ def run_experiment_approx(labels, predictions, thresholds):
     labels_enc = encrypt(labels)
     predictions_enc = encrypt(predictions)
 
-    TP = torch.tensor(np.zeros(len(thresholds)))
-    TN = torch.tensor(np.zeros(len(thresholds)))
-    FP = torch.tensor(np.zeros(len(thresholds)))
-    FN = torch.tensor(np.zeros(len(thresholds)))
-    TPR = torch.tensor(np.zeros(len(thresholds)))
-    FPR = torch.tensor(np.zeros(len(thresholds)))
+    auc = crypten.cryptensor(torch.tensor([0]))
+    steps = 100
+    stepwidth = int(len(predictions_enc)/steps)
+    for j in range(steps):
 
-    TP = crypten.cryptensor(TP)
-    TN = crypten.cryptensor(TN)
-    FP = crypten.cryptensor(FP)
-    FN = crypten.cryptensor(FN)
-    TPR = crypten.cryptensor(TPR)
-    FPR = crypten.cryptensor(FPR)
+        TP = torch.tensor(np.zeros(len(thresholds)))
+        TN = torch.tensor(np.zeros(len(thresholds)))
+        FP = torch.tensor(np.zeros(len(thresholds)))
+        FN = torch.tensor(np.zeros(len(thresholds)))
+        TPR = torch.tensor(np.zeros(len(thresholds)))
+        FPR = torch.tensor(np.zeros(len(thresholds)))
 
-    nr_estimate = 1 / (len(labels_enc) / 2)
+        TP = crypten.cryptensor(TP)
+        TN = crypten.cryptensor(TN)
+        FP = crypten.cryptensor(FP)
+        FN = crypten.cryptensor(FN)
+        TPR = crypten.cryptensor(TPR)
+        FPR = crypten.cryptensor(FPR)
 
-    for i in range(len(thresholds)):
-        classifications = predictions_enc >= thresholds[i]
-        TP_class = labels_enc * classifications
-        TP[i] =  TP_class.sum()
-        TN_class = (1-labels_enc) * (1-classifications)
-        TN[i] = TN_class.sum()
-        FP_class = (1 - labels_enc) * classifications #FP
-        FP[i] = FP_class.sum()
-        FN_class = labels_enc * (1 - classifications) #FN
-        FN[i] = FN_class.sum()
+        nr_estimate = 1 / (stepwidth / 2)
 
-        TPR[i] = newton_raphson(nr_estimate, TP[i], (TP[i] + FN[i]) )
-        FPR[i] = newton_raphson(nr_estimate, FP[i], (FP[i] + TN[i]) )
+        for i in range(len(thresholds)):
+            classifications = predictions_enc[j*stepwidth:(j+1)*stepwidth] >= thresholds[i]
+            TP_class = labels_enc[j*stepwidth:(j+1)*stepwidth] * classifications
+            TP[i] =  TP_class.sum()
+            TN_class = (1-labels_enc[j*stepwidth:(j+1)*stepwidth]) * (1-classifications)
+            TN[i] = TN_class.sum()
+            FP_class = (1 - labels_enc[j*stepwidth:(j+1)*stepwidth]) * classifications #FP
+            FP[i] = FP_class.sum()
+            FN_class = labels_enc[j*stepwidth:(j+1)*stepwidth] * (1 - classifications) #FN
+            FN[i] = FN_class.sum()
 
-    compute_AUC(FPR, TPR)
+            TPR[i] = newton_raphson(nr_estimate, TP[i], (TP[i] + FN[i]) )
+            FPR[i] = newton_raphson(nr_estimate, FP[i], (FP[i] + TN[i]) )
 
+        auc += compute_AUC(FPR, TPR)
+
+    crypten.print("AUC: ", auc.get_plain_text())
     end = time.process_time()
 
     # get the execution time
