@@ -15,6 +15,7 @@ import mpc
 import utils
 import multiprocessing
 multiprocessing.set_start_method("fork", force=True)
+import time
 
 import crypten
 import torch
@@ -33,7 +34,11 @@ paths_demo = {
 }
 
 def approx_auc():
+
+    start = time.time()
+
     def auc(labels, predictions):
+
 
         print(f"Lade Daten aus: {labels}")
         labels = data_loader.load_data(labels)
@@ -49,7 +54,17 @@ def approx_auc():
     for labels, predictions in paths_demo.items():
         auc(labels, predictions)
 
+    end = time.time()
+
+    # get the execution time
+    time_overall = end - start
+
+    print('Execution time:', time_overall, 'seconds')
+
 def real_auc():
+
+    start1 = time.time()
+
     def auc(labels, predictions):
 
         print(f"Lade Daten aus: {labels}")
@@ -69,6 +84,11 @@ def real_auc():
         #mpc.run_experiment(labels, predictions, threshold)
     for labels, predictions in paths_demo.items():
         auc(labels, predictions)
+
+    end1 = time.time()
+    time_overall1 = end1 - start1
+
+    print('Execution time:', time_overall1, 'seconds')
 
 if __name__ == '__main__':
     #approx_auc()
