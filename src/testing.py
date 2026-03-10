@@ -1,3 +1,5 @@
+import copy
+
 import torch
 import crypten
 import matplotlib.pyplot as plt
@@ -37,24 +39,52 @@ def run_experiment(predictions):
         for i in range(n - 1):
             for j in range(0, n - i - 1):
                 compare = result[j] >= result[j + 1]  # 1 if left <= right
-                crypten.print("J:", result[j].get_plain_text())
-                crypten.print("J+1:", result[j+1].get_plain_text())
-                crypten.print(compare.get_plain_text())
+                #crypten.print("J:", result[j].get_plain_text())
+                #crypten.print("J+1:", result[j+1].get_plain_text())
+                #crypten.print(compare.get_plain_text())
 
                 left = result[j]
                 right = result[j + 1]
 
                 new_left = left * compare[1] + right * (1 - compare[1])
-                crypten.print("new left:", new_left.get_plain_text())
+                #crypten.print("new left:", new_left.get_plain_text())
                 new_right = right * compare[1] + left * (1 - compare[1])
-                crypten.print("new right:", new_right.get_plain_text())
+                #crypten.print("new right:", new_right.get_plain_text())
 
                 result[j] = new_left
                 result[j + 1] = new_right
 
-        crypten.print(result.get_plain_text())
+        #crypten.print(result.get_plain_text())
         return result
 
-    secure_sort(encryption)
+    sorted_df = secure_sort(encryption)
+
+    def SEC_classifier(sorted, t='auto'):
+
+        t_enc = 0
+
+        if isinstance(t, str):
+            for j in range(len(sorted)):
+                for i in sorted[j][1]:
+
+                    t_enc = crypten.print(i)
+                    crypten.print(t_enc)
+                    break
+        else:
+            t = torch.tensor(t)
+            t_enc = crypten.cryptensor(t)
+
+        res = []
+
+        for i in range(len(sorted)):
+            comparison = sorted[i][1] >= t_enc
+            res.append(comparison)
+
+        return res
+
+    classified_df = SEC_classifier(sorted_df, 'auto')
+    crypten.print(classified_df)
+
+
 
 run_experiment(predictions)
