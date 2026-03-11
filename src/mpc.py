@@ -65,17 +65,17 @@ def run_experiment_approx(labels, predictions, thresholds):
             classifications = predictions_enc[j*stepwidth:(j+1)*stepwidth] >= thresholds[i]
             TP_class = labels_enc[j*stepwidth:(j+1)*stepwidth] * classifications
             TP[i] =  TP_class.sum()
-            TN_class = (1-labels_enc[j*stepwidth:(j+1)*stepwidth]) * (1-classifications)
-            TN[i] = TN_class.sum()
+            #TN_class = (1-labels_enc[j*stepwidth:(j+1)*stepwidth]) * (1-classifications)
+            #TN[i] = TN_class.sum()
             FP_class = (1 - labels_enc[j*stepwidth:(j+1)*stepwidth]) * classifications #FP
             FP[i] = FP_class.sum()
-            FN_class = labels_enc[j*stepwidth:(j+1)*stepwidth] * (1 - classifications) #FN
-            FN[i] = FN_class.sum()
+            #FN_class = labels_enc[j*stepwidth:(j+1)*stepwidth] * (1 - classifications) #FN
+            #FN[i] = FN_class.sum()
 
             #TPR[i] = newton_raphson(nr_estimate, TP[i], (TP[i] + FN[i]) )
             #FPR[i] = newton_raphson(nr_estimate, FP[i], (FP[i] + TN[i]) )
 
-        auc += compute_AUC(tp, fp)
+        auc += compute_AUC(TP, FP)
 
     crypten.print("AUC: ", auc.get_plain_text())
     end = time.process_time()
@@ -100,23 +100,22 @@ def run_experiment(data):
     def compute_AUC(tp, fp, P, N):
         sum = crypten.cryptensor(torch.tensor([0]))
         for i in range(1, len(tp)):
-            part1 = tp[i]+tp[i-1]
-            part2 = fp[i]-fp[i-1]
-            sum += part1 * part2
+            tpr = tp[i]+tp[i-1]
+            fpr = fp[i]-fp[i-1]
+            sum += tpr * fpr
 
         repetition = int(-(np.log(50/len(tp)))/np.log(2)) # auto wert needed
         crypten.print("Repetitions", repetition)
 
         two = crypten.cryptensor(torch.tensor([2]))
-        zerofive = crypten.cryptensor(torch.tensor([0.5]))
         factor1 = two.reciprocal()
         crypten.print("Factor 1: ", factor1.get_plain_text())
 
         crypten.print("P: ", P.get_plain_text())
         par_fac = crypten.cryptensor(torch.tensor([1]))
         for _ in range(repetition):
-            P = P * zerofive
-            N = N * zerofive
+            P = P * 0.5
+            N = N * 0.5
             par_fac *= two
 
         crypten.print("P: ", P.get_plain_text())
@@ -131,7 +130,7 @@ def run_experiment(data):
         crypten.print("par_fac: ", par_fac.get_plain_text())
         sum = sum * par_fac.reciprocal() * par_fac.reciprocal()
 
-        sum = sum * factor1 * factor2 * factor3
+        sum = sum * 0.5 * factor2 * factor3
 
         crypten.print("sum", sum.get_plain_text())
 
@@ -192,7 +191,6 @@ def run_experiment(data):
         TP[i] =  TP_class.sum()
         FP_class = (1 - labels_enc) * classifications #FP
         FP[i] = FP_class.sum()
-
 
     compute_AUC(TP, FP, P, N)
 

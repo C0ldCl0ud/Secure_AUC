@@ -34,7 +34,7 @@ paths_full = {
     "../data/labels_100000.txt": "../data/pred_cons_100000.txt",
 }
 paths_demo = {
-    "../data/labels_100000.txt": "../data/pred_cons_100000.txt"
+    "../data/labels_100.txt": "../data/pred_cons_100.txt"
 }
 
 def approx_auc(paths, partitions, n_steps=100):
