@@ -13,8 +13,10 @@ import pandas as pd
 
 import auc_analysis
 import data_loader
+import dp
 import mpc
 import numpy as np
+import time
 
 import multiprocessing
 multiprocessing.set_start_method("fork", force=True)
@@ -57,12 +59,94 @@ def secure_auc(data, epsilon=0, approx=False, n_steps=1000, partitions=1):
         data = data_loader.split_shuffled_df(data, 2)
         mpc.run_experiment_real(data, epsilon)
 
+def dp_auc_calc(data, epsilon=0):
+
+    def compute_AUC(tp, fp, P, N):
+        sum = 0
+        for i in range(1, len(tp)):
+            tpr = tp[i]+tp[i-1]
+            fpr = fp[i]-fp[i-1]
+            sum += tpr * fpr
+        factor = 2*N*P
+        auc = sum/factor
+        print("AUC: ", auc)
+
+    def sortMergeJoin(left_label, left_pred, right_label, right_pred):
+        predictions = np.zeros(len(right_pred)+len(left_pred))
+        labels = np.zeros(len(predictions))
+
+        left_index = 0
+        right_index = 0
+        counter = 0
+
+        while left_index < len(left_pred) and right_index < len(right_pred):
+
+            if left_pred[left_index] >= right_pred[right_index]:
+                predictions[counter] = left_pred[left_index]
+                labels[counter] = left_label[left_index]
+                left_index += 1
+            else:
+                predictions[counter] = right_pred[right_index]
+                labels[counter] = right_label[right_index]
+                right_index += 1
+
+            counter += 1
+
+        return labels, predictions
+
+    data = data_loader.split_shuffled_df(data, 2)
+
+    start1 = time.process_time()
+
+    left = data[0]
+    right = data[1]
+
+    left_label = left.iloc[:, 0].tolist()
+    right_label = right.iloc[:, 0].tolist()
+    left_pred = left.iloc[:, 1].tolist()
+    right_pred = right.iloc[:, 1].tolist()
+
+    start_sort = time.process_time()
+    labels, predictions = sortMergeJoin(left_label, left_pred, right_label, right_pred)
+    end_sort = time.process_time()
+    print(f"Sorting finished after {(end_sort-start_sort)/60} minutes.")
+
+    TP = np.zeros(len(predictions))
+    FP = np.zeros(len(predictions))
+
+    P = labels.sum() + dp.laplace_noise(epsilon, 1)
+    N = len(labels) - P
+
+    for i in range(len(predictions)):
+        classifications = predictions >= predictions[i]
+
+        TP_class = labels * classifications
+        TP[i] =  TP_class.sum() + dp.laplace_noise(epsilon, 1)
+
+        FP_class = (1 - labels) * classifications #FP
+        FP[i] = FP_class.sum() +dp.laplace_noise(epsilon, 1)
+
+    compute_AUC(TP, FP, P, N)
+
+    # get the execution time
+    end1 = time.process_time()
+    time_overall1 = end1 - start1
+    print('Execution time:', time_overall1, 'seconds')
+
 
 if __name__ == '__main__':
     for labels_path, predictions_path in paths_demo.items():
         print("-------------------------------------------------------------------------")
         data = load_data(labels_path, predictions_path)
-        for epsilon in [0, 0.3, 1, 3, 9]:
+        print("Calculating scikit AUC:")
+        calc_scikit_auc(data)
+
+        print("-------------------------------------------------------------------------")
+        print("MPC-CALCULATIONS")
+        print()
+
+        epsilons = [0, 0.3, 1, 3, 9]
+        for epsilon in epsilons:
             print("-------------------------------------------------------------------------")
             print(f"Calculating accurate AUC(epsilon: {epsilon}):")
             secure_auc(data, epsilon=epsilon)
@@ -71,6 +155,12 @@ if __name__ == '__main__':
             partitions = 1
             print(f"Calculating approximate AUC (epsilon: {epsilon}, n_steps: {n_steps}, partitions: {partitions}):")
             secure_auc(data, epsilon=epsilon, approx=True, n_steps=n_steps, partitions=partitions)
+
+
+        print("-------------------------------------------------------------------------")
+        print("DP-ONLY-CALCULATIONS")
+        print()
+        for epsilon in epsilons:
             print("-------------------------------------------------------------------------")
-            print("Calculating scikit AUC:")
-            calc_scikit_auc(data)
+            print(f"Calculating DP-only AUC(epsilon: {epsilon}):")
+            dp_auc_calc(data, epsilon=epsilon)
