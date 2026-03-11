@@ -34,10 +34,10 @@ paths_full = {
     "../data/labels_100000.txt": "../data/pred_cons_100000.txt",
 }
 paths_demo = {
-    "../data/labels_1000.txt": "../data/pred_cons_1000.txt"
+    "../data/labels_100000.txt": "../data/pred_cons_100000.txt"
 }
 
-def approx_auc(paths, n_steps=100):
+def approx_auc(paths, partitions, n_steps=100):
 
     def auc(labels, predictions):
 
@@ -54,7 +54,7 @@ def approx_auc(paths, n_steps=100):
 
         thresholds = np.linspace(1, 0, n_steps)
 
-        mpc.run_experiment_approx(labels, predictions, thresholds)
+        mpc.run_experiment_approx(labels, predictions, partitions, thresholds)
         auc_scikit = auc_analysis.calculate_auc_scikit(labels, predictions)
 
         #dp.differential_auc_approx(labels, predictions, thresholds)
@@ -86,5 +86,5 @@ def real_auc(paths):
         auc(labels, predictions)
 
 if __name__ == '__main__':
-    #approx_auc(paths_demo, 100)
-    real_auc(paths_demo)
+    approx_auc(paths_demo, 100, 100)
+    #real_auc(paths_demo)

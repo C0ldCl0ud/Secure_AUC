@@ -5,11 +5,10 @@ import numpy as np
 import pandas as pd
 import torch
 from crypten import cryptensor
-from scipy.special import factorial2
 
 
 @crypten.mpc.run_multiprocess(world_size=2)
-def run_experiment_approx(labels, predictions, thresholds):
+def run_experiment_approx(labels, predictions, partitions, thresholds):
     start = time.process_time()
     if len(predictions) != len(labels):
         raise Exception("Prediction and Reference have unequal length.")
@@ -30,7 +29,7 @@ def run_experiment_approx(labels, predictions, thresholds):
             part2 = fpr[i]-fpr[i-1]
             sum += (part1 * part2) * 0.5
         crypten.print("partial sum", sum.get_plain_text())
-        return sum * 0.01
+        return sum * 1/partitions
 
     def newton_raphson(x, a, b, num=5):
         for i in range(num):
@@ -44,7 +43,7 @@ def run_experiment_approx(labels, predictions, thresholds):
     predictions_enc = encrypt(predictions)
 
     auc = crypten.cryptensor(torch.tensor([0]))
-    steps = 100
+    steps = partitions
     stepwidth = int(len(predictions_enc)/steps)
     for j in range(steps):
 
