@@ -30,7 +30,7 @@ paths_full = {
     "../data/labels_100000.txt": "../data/pred_cons_100000.txt",
 }
 paths_demo = {
-    "../data/labels_1000.txt": "../data/pred_cons_1000.txt"
+    "../data/labels_100.txt": "../data/pred_cons_100.txt"
 }
 
 def calc_scikit_auc(data):
@@ -48,29 +48,29 @@ def load_data(label_path, prediction_path):
 
     return data
 
-def secure_auc(data, approx=False, n_steps=1000, partitions=1):
+def secure_auc(data, epsilon=0, approx=False, n_steps=1000, partitions=1):
     if approx:
         data = data.sample(frac=1, random_state=42)
         thresholds = np.linspace(1, 0, n_steps)
-        mpc.run_experiment_approx(data, thresholds, partitions)
+        mpc.run_experiment_approx(data, thresholds, epsilon, partitions)
     else:
         data = data_loader.split_shuffled_df(data, 2)
-        mpc.run_experiment_real(data)
+        mpc.run_experiment_real(data, epsilon)
 
 
 if __name__ == '__main__':
     for labels_path, predictions_path in paths_demo.items():
-
+        print("-------------------------------------------------------------------------")
         data = load_data(labels_path, predictions_path)
-
-        print("-------------------------------------------------------------------------")
-        print("Calculating accurate AUC:")
-        secure_auc(data)
-        print("-------------------------------------------------------------------------")
-        n_steps = 100
-        partitions = 1
-        print(f"Calculating approximate AUC (n_steps: {n_steps}, partitions: {partitions}):")
-        secure_auc(data, approx=True, n_steps=n_steps, partitions=partitions)
-        print("-------------------------------------------------------------------------")
-        print("Calculating scikit AUC:")
-        calc_scikit_auc(data)
+        for epsilon in [0, 0.3, 1, 3, 9]:
+            print("-------------------------------------------------------------------------")
+            print(f"Calculating accurate AUC(epsilon: {epsilon}):")
+            secure_auc(data, epsilon=epsilon)
+            print("-------------------------------------------------------------------------")
+            n_steps = 100
+            partitions = 1
+            print(f"Calculating approximate AUC (epsilon: {epsilon}, n_steps: {n_steps}, partitions: {partitions}):")
+            secure_auc(data, epsilon=epsilon, approx=True, n_steps=n_steps, partitions=partitions)
+            print("-------------------------------------------------------------------------")
+            print("Calculating scikit AUC:")
+            calc_scikit_auc(data)

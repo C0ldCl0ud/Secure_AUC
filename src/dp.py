@@ -2,6 +2,11 @@ import numpy as np
 import auc_analysis
 import mpc
 
+def laplace_noise(epsilon, sensitivity):
+    if epsilon == 0:
+        return 0
+    return np.random.laplace(loc=0, scale=sensitivity/epsilon)
+
 def differential_auc_scilearn(truth, prediction):
 
     auc = auc_analysis.calculate_auc_scikit(truth, prediction)

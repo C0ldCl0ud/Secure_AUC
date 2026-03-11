@@ -5,9 +5,11 @@ import numpy as np
 import torch
 import pandas as pd
 
+import dp
+
 
 @crypten.mpc.run_multiprocess(world_size=2)
-def run_experiment_real(data):
+def run_experiment_real(data, epsilon):
 
     def compute_AUC(tp, fp, P, N):
         sum = crypten.cryptensor(torch.tensor([0]))
@@ -67,17 +69,17 @@ def run_experiment_real(data):
     TP = crypten.cryptensor(torch.tensor(np.zeros(len(predictions_enc))))
     FP = crypten.cryptensor(torch.tensor(np.zeros(len(predictions_enc))))
 
-    P = labels_enc.sum()
+    P = labels_enc.sum() + dp.laplace_noise(epsilon, 1)
     N = len(labels_enc) - P
 
     for i in range(len(predictions_enc)):
         classifications = predictions_enc >= predictions_enc[i]
 
         TP_class = labels_enc * classifications
-        TP[i] =  TP_class.sum()
+        TP[i] =  TP_class.sum() + dp.laplace_noise(epsilon, 1)
 
         FP_class = (1 - labels_enc) * classifications #FP
-        FP[i] = FP_class.sum()
+        FP[i] = FP_class.sum() +dp.laplace_noise(epsilon, 1)
 
     compute_AUC(TP, FP, P, N)
 
@@ -89,7 +91,7 @@ def run_experiment_real(data):
 
 
 @crypten.mpc.run_multiprocess(world_size=2)
-def run_experiment_approx(data, thresholds, partitions=1):
+def run_experiment_approx(data, thresholds, epsilon, partitions=1):
     start = time.process_time()
 
     labels, predictions = pd.DataFrame(data.iloc[:, 0]), pd.DataFrame(data.iloc[:, 1])
@@ -131,17 +133,17 @@ def run_experiment_approx(data, thresholds, partitions=1):
         TP = crypten.cryptensor(torch.tensor(np.zeros(len(thresholds))))
         FP = crypten.cryptensor(torch.tensor(np.zeros(len(thresholds))))
 
-        P = labels_enc[i*stepwidth:(i+1)*stepwidth].sum()
+        P = labels_enc[i*stepwidth:(i+1)*stepwidth].sum() + dp.laplace_noise(epsilon, 1)
         N = stepwidth - P
 
         for j in range(len(thresholds)):
             classifications = predictions_enc[i*stepwidth:(i+1)*stepwidth] >= thresholds[j]
 
             TP_class = labels_enc[i*stepwidth:(i+1)*stepwidth] * classifications
-            TP[j] = TP_class.sum()
+            TP[j] = TP_class.sum() + dp.laplace_noise(epsilon, 1)
 
             FP_class = (1 - labels_enc[i*stepwidth:(i+1)*stepwidth]) * classifications
-            FP[j] = FP_class.sum()
+            FP[j] = FP_class.sum() + dp.laplace_noise(epsilon, 1)
 
         partial_auc += compute_AUC(TP, FP, P, N)
 
