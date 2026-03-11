@@ -2,13 +2,11 @@ import time
 
 import crypten
 import numpy as np
-import pandas as pd
 import torch
-from crypten import cryptensor
 
 
 @crypten.mpc.run_multiprocess(world_size=2)
-def run_experiment_approx(labels, predictions, partitions, thresholds):
+def run_experiment_approx(labels, predictions, thresholds):
     start = time.process_time()
     if len(predictions) != len(labels):
         raise Exception("Prediction and Reference have unequal length.")
@@ -48,20 +46,20 @@ def run_experiment_approx(labels, predictions, partitions, thresholds):
     for j in range(steps):
 
         TP = torch.tensor(np.zeros(len(thresholds)))
-        TN = torch.tensor(np.zeros(len(thresholds)))
+        #TN = torch.tensor(np.zeros(len(thresholds)))
         FP = torch.tensor(np.zeros(len(thresholds)))
-        FN = torch.tensor(np.zeros(len(thresholds)))
-        TPR = torch.tensor(np.zeros(len(thresholds)))
-        FPR = torch.tensor(np.zeros(len(thresholds)))
+        #FN = torch.tensor(np.zeros(len(thresholds)))
+        #TPR = torch.tensor(np.zeros(len(thresholds)))
+        #FPR = torch.tensor(np.zeros(len(thresholds)))
 
         TP = crypten.cryptensor(TP)
-        TN = crypten.cryptensor(TN)
+        #TN = crypten.cryptensor(TN)
         FP = crypten.cryptensor(FP)
-        FN = crypten.cryptensor(FN)
-        TPR = crypten.cryptensor(TPR)
-        FPR = crypten.cryptensor(FPR)
+        #FN = crypten.cryptensor(FN)
+        #TPR = crypten.cryptensor(TPR)
+        #FPR = crypten.cryptensor(FPR)
 
-        nr_estimate = 1 / (stepwidth / 2)
+        #nr_estimate = 1 / (stepwidth / 2)
 
         for i in range(len(thresholds)):
             classifications = predictions_enc[j*stepwidth:(j+1)*stepwidth] >= thresholds[i]
@@ -74,10 +72,10 @@ def run_experiment_approx(labels, predictions, partitions, thresholds):
             FN_class = labels_enc[j*stepwidth:(j+1)*stepwidth] * (1 - classifications) #FN
             FN[i] = FN_class.sum()
 
-            TPR[i] = newton_raphson(nr_estimate, TP[i], (TP[i] + FN[i]) )
-            FPR[i] = newton_raphson(nr_estimate, FP[i], (FP[i] + TN[i]) )
+            #TPR[i] = newton_raphson(nr_estimate, TP[i], (TP[i] + FN[i]) )
+            #FPR[i] = newton_raphson(nr_estimate, FP[i], (FP[i] + TN[i]) )
 
-        auc += compute_AUC(FPR, TPR)
+        auc += compute_AUC(tp, fp)
 
     crypten.print("AUC: ", auc.get_plain_text())
     end = time.process_time()
@@ -106,23 +104,36 @@ def run_experiment(data):
             part2 = fp[i]-fp[i-1]
             sum += part1 * part2
 
+        repetition = int(-(np.log(50/len(tp)))/np.log(2)) # auto wert needed
+        crypten.print("Repetitions", repetition)
+
         two = crypten.cryptensor(torch.tensor([2]))
+        zerofive = crypten.cryptensor(torch.tensor([0.5]))
         factor1 = two.reciprocal()
         crypten.print("Factor 1: ", factor1.get_plain_text())
-        factor2 = newton_raphson(1/45, 1, P, num=5)
-        crypten.print("Factor 2:", factor2.get_plain_text())
-        factor3 = N.reciprocal()#newton_raphson((1/(N-3)), 1, N, num=5)
+
+        crypten.print("P: ", P.get_plain_text())
+        par_fac = crypten.cryptensor(torch.tensor([1]))
+        for _ in range(repetition):
+            P = P * zerofive
+            N = N * zerofive
+            par_fac *= two
+
+        crypten.print("P: ", P.get_plain_text())
+
+        factor2 = P.reciprocal()
+        crypten.print("Factor 2: ", factor2.get_plain_text())
+        factor3 = N.reciprocal()
         crypten.print("Factor 3: ", factor3.get_plain_text())
 
-        reci_factor = factor1 * factor2 * factor3
-        crypten.print("Reciprocal of factor: ", reci_factor.get_plain_text())
+        crypten.print("Sum: ", sum.get_plain_text())
 
-        nr_estimate = 1/((len(tp)*len(fp)/2)*2)
-        estimate_reci = newton_raphson(nr_estimate, 1, (two*P*N), num=5)
-        crypten.print("Estimate reciprocal of factor: ", estimate_reci.get_plain_text())
+        crypten.print("par_fac: ", par_fac.get_plain_text())
+        sum = sum * par_fac.reciprocal() * par_fac.reciprocal()
 
-        auc = estimate_reci * sum
-        crypten.print("sum", auc.get_plain_text())
+        sum = sum * factor1 * factor2 * factor3
+
+        crypten.print("sum", sum.get_plain_text())
 
     def sortMergeJoin(left_label, left_pred, right_label, right_pred):
         predictions = torch.tensor(np.zeros(len(left_pred)+len(right_pred)))
