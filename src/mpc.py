@@ -3,99 +3,11 @@ import time
 import crypten
 import numpy as np
 import torch
+import pandas as pd
 
 
 @crypten.mpc.run_multiprocess(world_size=2)
-def run_experiment_approx(labels, predictions, thresholds):
-    start = time.process_time()
-    if len(predictions) != len(labels):
-        raise Exception("Prediction and Reference have unequal length.")
-
-    def encrypt(vector):
-        # transform
-        values = vector.iloc[:, 0].tolist()
-        x = torch.tensor(values)
-        x_enc = crypten.cryptensor(x)
-        return x_enc
-
-    def compute_AUC(fpr, tpr):
-        sum = crypten.cryptensor(torch.tensor([0]))
-        crypten.print(fpr.get_plain_text())
-        crypten.print(tpr.get_plain_text())
-        for i in range(1, len(tpr)):
-            part1 = tpr[i]+tpr[i-1]
-            part2 = fpr[i]-fpr[i-1]
-            sum += (part1 * part2) * 0.5
-        crypten.print("partial sum", sum.get_plain_text())
-        return sum * 1/partitions
-
-    def newton_raphson(x, a, b, num=5):
-        for i in range(num):
-            temp = x * b
-            temp = 2 - temp
-            x = x * temp
-
-        return x * a
-
-    labels_enc = encrypt(labels)
-    predictions_enc = encrypt(predictions)
-
-    auc = crypten.cryptensor(torch.tensor([0]))
-    steps = partitions
-    stepwidth = int(len(predictions_enc)/steps)
-    for j in range(steps):
-
-        TP = torch.tensor(np.zeros(len(thresholds)))
-        #TN = torch.tensor(np.zeros(len(thresholds)))
-        FP = torch.tensor(np.zeros(len(thresholds)))
-        #FN = torch.tensor(np.zeros(len(thresholds)))
-        #TPR = torch.tensor(np.zeros(len(thresholds)))
-        #FPR = torch.tensor(np.zeros(len(thresholds)))
-
-        TP = crypten.cryptensor(TP)
-        #TN = crypten.cryptensor(TN)
-        FP = crypten.cryptensor(FP)
-        #FN = crypten.cryptensor(FN)
-        #TPR = crypten.cryptensor(TPR)
-        #FPR = crypten.cryptensor(FPR)
-
-        #nr_estimate = 1 / (stepwidth / 2)
-
-        for i in range(len(thresholds)):
-            classifications = predictions_enc[j*stepwidth:(j+1)*stepwidth] >= thresholds[i]
-            TP_class = labels_enc[j*stepwidth:(j+1)*stepwidth] * classifications
-            TP[i] =  TP_class.sum()
-            #TN_class = (1-labels_enc[j*stepwidth:(j+1)*stepwidth]) * (1-classifications)
-            #TN[i] = TN_class.sum()
-            FP_class = (1 - labels_enc[j*stepwidth:(j+1)*stepwidth]) * classifications #FP
-            FP[i] = FP_class.sum()
-            #FN_class = labels_enc[j*stepwidth:(j+1)*stepwidth] * (1 - classifications) #FN
-            #FN[i] = FN_class.sum()
-
-            #TPR[i] = newton_raphson(nr_estimate, TP[i], (TP[i] + FN[i]) )
-            #FPR[i] = newton_raphson(nr_estimate, FP[i], (FP[i] + TN[i]) )
-
-        auc += compute_AUC(TP, FP)
-
-    crypten.print("AUC: ", auc.get_plain_text())
-    end = time.process_time()
-
-    # get the execution time
-    time_overall = end - start
-
-    print('Execution time:', time_overall, 'seconds')
-
-
-@crypten.mpc.run_multiprocess(world_size=2)
-def run_experiment(data):
-    start1 = time.process_time()
-    def newton_raphson(x, a, b, num=5):
-        for i in range(num):
-            temp = x * b
-            temp = 2 - temp
-            x = x * temp
-
-        return x * a
+def run_experiment_real(data):
 
     def compute_AUC(tp, fp, P, N):
         sum = crypten.cryptensor(torch.tensor([0]))
@@ -104,35 +16,15 @@ def run_experiment(data):
             fpr = fp[i]-fp[i-1]
             sum += tpr * fpr
 
-        repetition = int(-(np.log(50/len(tp)))/np.log(2)) # auto wert needed
-        crypten.print("Repetitions", repetition)
+        scale = crypten.cryptensor(torch.tensor([1]))
+        for i in range(6):
+            P *= 0.5
+            N *= 0.5
+            scale *= 2
 
-        two = crypten.cryptensor(torch.tensor([2]))
-        factor1 = two.reciprocal()
-        crypten.print("Factor 1: ", factor1.get_plain_text())
+        auc = 0.5 * P.reciprocal() * N.reciprocal()  * sum * scale.reciprocal() * scale.reciprocal()
 
-        crypten.print("P: ", P.get_plain_text())
-        par_fac = crypten.cryptensor(torch.tensor([1]))
-        for _ in range(repetition):
-            P = P * 0.5
-            N = N * 0.5
-            par_fac *= two
-
-        crypten.print("P: ", P.get_plain_text())
-
-        factor2 = P.reciprocal()
-        crypten.print("Factor 2: ", factor2.get_plain_text())
-        factor3 = N.reciprocal()
-        crypten.print("Factor 3: ", factor3.get_plain_text())
-
-        crypten.print("Sum: ", sum.get_plain_text())
-
-        crypten.print("par_fac: ", par_fac.get_plain_text())
-        sum = sum * par_fac.reciprocal() * par_fac.reciprocal()
-
-        sum = sum * 0.5 * factor2 * factor3
-
-        crypten.print("sum", sum.get_plain_text())
+        crypten.print("AUC: ", auc.get_plain_text())
 
     def sortMergeJoin(left_label, left_pred, right_label, right_pred):
         predictions = torch.tensor(np.zeros(len(left_pred)+len(right_pred)))
@@ -157,46 +49,108 @@ def run_experiment(data):
 
         return labels, predictions
 
+    start1 = time.process_time()
 
     left = data[0]
     right = data[1]
 
-    left_label = torch.tensor(left.iloc[:, 0].tolist())
-    right_label = torch.tensor(right.iloc[:, 0].tolist())
-    left_pred = torch.tensor(left.iloc[:, 1].tolist())
-    right_pred = torch.tensor(right.iloc[:, 1].tolist())
+    left_label = crypten.cryptensor(torch.tensor(left.iloc[:, 0].tolist()))
+    right_label = crypten.cryptensor(torch.tensor(right.iloc[:, 0].tolist()))
+    left_pred = crypten.cryptensor(torch.tensor(left.iloc[:, 1].tolist()))
+    right_pred = crypten.cryptensor(torch.tensor(right.iloc[:, 1].tolist()))
 
-    left_label = crypten.cryptensor(left_label)
-    right_label = crypten.cryptensor(right_label)
-    left_pred = crypten.cryptensor(left_pred)
-    right_pred = crypten.cryptensor(right_pred)
-
+    start_sort = time.process_time()
     labels_enc, predictions_enc = sortMergeJoin(left_label, left_pred, right_label, right_pred)
+    end_sort = time.process_time()
+    print(f"Sorting finished after {(end_sort-start_sort)/60} minutes.")
 
-    TP = torch.tensor(np.zeros(len(predictions_enc)))
-    FP = torch.tensor(np.zeros(len(predictions_enc)))
-
-    TP = crypten.cryptensor(TP)
-    FP = crypten.cryptensor(FP)
+    TP = crypten.cryptensor(torch.tensor(np.zeros(len(predictions_enc))))
+    FP = crypten.cryptensor(torch.tensor(np.zeros(len(predictions_enc))))
 
     P = labels_enc.sum()
-    #crypten.print("Control number of P", P.get_plain_text())
-    all_obj = crypten.cryptensor(torch.tensor([len(labels_enc)]))
-    N =  all_obj - P
-    #crypten.print("Control number of N", N.get_plain_text())
+    N = len(labels_enc) - P
 
     for i in range(len(predictions_enc)):
         classifications = predictions_enc >= predictions_enc[i]
+
         TP_class = labels_enc * classifications
         TP[i] =  TP_class.sum()
+
         FP_class = (1 - labels_enc) * classifications #FP
         FP[i] = FP_class.sum()
 
     compute_AUC(TP, FP, P, N)
 
+    # get the execution time
     end1 = time.process_time()
     time_overall1 = end1 - start1
+    crypten.print('Execution time:', time_overall1, 'seconds')
 
-    print('Execution time:', time_overall1, 'seconds')
 
+
+@crypten.mpc.run_multiprocess(world_size=2)
+def run_experiment_approx(data, thresholds, partitions=1):
+    start = time.process_time()
+
+    labels, predictions = pd.DataFrame(data.iloc[:, 0]), pd.DataFrame(data.iloc[:, 1])
+
+    if len(predictions) != len(labels):
+        raise Exception("Prediction and Reference have unequal length.")
+
+    def encrypt_df(vector):
+        # transform
+        values = vector.iloc[:, 0].tolist()
+        x = torch.tensor(values)
+        x_enc = crypten.cryptensor(x)
+        return x_enc
+
+    def compute_AUC(tp, fp, P, N):
+        sum = crypten.cryptensor(torch.tensor([0]))
+        for i in range(1, len(tp)):
+            tpr = tp[i] + tp[i - 1]
+            fpr = fp[i] - fp[i - 1]
+            sum += tpr * fpr
+
+        scale = crypten.cryptensor(torch.tensor([1]))
+        for i in range(6):
+            P *= 0.5
+            N *= 0.5
+            scale *= 2
+
+        return 0.5 * P.reciprocal() * N.reciprocal() * sum * scale.reciprocal() * scale.reciprocal()
+
+
+
+    labels_enc = encrypt_df(labels)
+    predictions_enc = encrypt_df(predictions)
+
+    TP = crypten.cryptensor(torch.tensor(np.zeros(len(thresholds))))
+    FP = crypten.cryptensor(torch.tensor(np.zeros(len(thresholds))))
+
+    P = labels_enc.sum()
+    N = len(labels_enc) - P
+
+    partial_auc = crypten.cryptensor(torch.tensor([0]))
+    stepwidth = int(len(labels_enc)/partitions)
+
+    for i in range(partitions):
+        for j in range(len(thresholds)):
+            classifications = predictions_enc[i*stepwidth:(i+1)*stepwidth] >= thresholds[j]
+
+            TP_class = labels_enc[i*stepwidth:(i+1)*stepwidth] * classifications
+            TP[j] = TP_class.sum()
+
+            FP_class = (1 - labels_enc[i*stepwidth:(i+1)*stepwidth]) * classifications
+            FP[j] = FP_class.sum()
+
+        partial_auc += compute_AUC(TP, FP, P, N)
+
+    auc = partial_auc.get_plain_text()
+    auc = auc / partitions
+    crypten.print('AUC:', auc)
+
+     #get the execution time
+    end = time.process_time()
+    time_overall = end - start
+    crypten.print('Execution time:', time_overall, 'seconds')
 
