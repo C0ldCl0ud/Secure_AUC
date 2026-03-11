@@ -34,7 +34,7 @@ paths_full = {
     "../data/labels_100000.txt": "../data/pred_cons_100000.txt",
 }
 paths_demo = {
-    "../data/labels_100.txt": "../data/pred_cons_100.txt"
+    "../data/labels_1000.txt": "../data/pred_cons_1000.txt"
 }
 
 def approx_auc(paths, n_steps=100):
@@ -86,5 +86,5 @@ def real_auc(paths):
         auc(labels, predictions)
 
 if __name__ == '__main__':
-    approx_auc(paths_demo, 2500)
-    #real_auc()
+    #approx_auc(paths_demo, 100)
+    real_auc(paths_demo)
