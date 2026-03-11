@@ -21,18 +21,66 @@ import time
 import multiprocessing
 multiprocessing.set_start_method("fork", force=True)
 
+import argparse
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Compute thresholds for predictions")
+
+    parser.add_argument(
+        "--n_steps",
+        type=int,
+        default=100,
+        help="How many threshold values are computed (default: 100)"
+    )
+
+    parser.add_argument(
+        "--partitions",
+        type=int,
+        default=1,
+        help="Size / number of partitions for splitting the data (default: 1)"
+    )
+
+    parser.add_argument(
+        "--label_path",
+        type=str,
+        default="",
+        help="Path to label file (default: "")"
+    )
+
+    parser.add_argument(
+        "--prediction_path",
+        type=str,
+        default="",
+        help="Path to prediction file (default: "")"
+    )
+
+    parser.add_argument(
+        "--skip_real",
+        type=bool,
+        default=False,
+        help="Whether to skip real data, with long computation time (default: False)"
+    )
+    parser.add_argument(
+        "--skip_approx",
+        type=bool,
+        default=False,
+        help="Whether to skip approx data (default: False)"
+    )
+
+    return parser.parse_args()
+
 #os.environ["CUDA_VISIBLE_DEVICES"] = ","
 #device = torch.device("cpu")
 #print(f"Using device: {device}")
 
 paths_full = {
-    "../data/labels_100.txt": "../data/pred_cons_100.txt",
-    "../data/labels_1000.txt": "../data/pred_cons_1000.txt",
-    "../data/labels_10000.txt": "../data/pred_cons_10000.txt",
-    "../data/labels_100000.txt": "../data/pred_cons_100000.txt",
+    "data/labels_100.txt": "data/pred_cons_100.txt",
+    "data/labels_1000.txt": "data/pred_cons_1000.txt",
+    "data/labels_10000.txt": "data/pred_cons_10000.txt",
+    "data/labels_100000.txt": "data/pred_cons_100000.txt",
 }
 paths_demo = {
-    "../data/labels_100.txt": "../data/pred_cons_100.txt"
+    "data/labels_100.txt": "data/pred_cons_100.txt"
 }
 
 def calc_scikit_auc(data):
@@ -135,7 +183,13 @@ def dp_auc_calc(data, epsilon=0):
 
 
 if __name__ == '__main__':
-    for labels_path, predictions_path in paths_demo.items():
+
+    epsilons = [0, 0.3, 1, 3, 9]
+
+    args = parse_args()
+
+
+    def run(labels_path, predictions_path):
         print("-------------------------------------------------------------------------")
         data = load_data(labels_path, predictions_path)
         print("Calculating scikit AUC:")
@@ -145,17 +199,16 @@ if __name__ == '__main__':
         print("MPC-CALCULATIONS")
         print()
 
-        epsilons = [0, 0.3, 1, 3, 9]
         for epsilon in epsilons:
-            print("-------------------------------------------------------------------------")
-            print(f"Calculating accurate AUC(epsilon: {epsilon}):")
-            secure_auc(data, epsilon=epsilon)
-            print("-------------------------------------------------------------------------")
-            n_steps = 100
-            partitions = 1
-            print(f"Calculating approximate AUC (epsilon: {epsilon}, n_steps: {n_steps}, partitions: {partitions}):")
-            secure_auc(data, epsilon=epsilon, approx=True, n_steps=n_steps, partitions=partitions)
-
+            if not args.skip_real:
+                print("-------------------------------------------------------------------------")
+                print(f"Calculating accurate AUC(epsilon: {epsilon}):")
+                secure_auc(data, epsilon=epsilon)
+            if not args.skip_approx:
+                print("-------------------------------------------------------------------------")
+                print(
+                    f"Calculating approximate AUC (epsilon: {epsilon}, n_steps: {args.n_steps}, partitions: {args.partitions}):")
+                secure_auc(data, epsilon=epsilon, approx=True, n_steps=args.n_steps, partitions=args.partitions)
 
         print("-------------------------------------------------------------------------")
         print("DP-ONLY-CALCULATIONS")
@@ -164,3 +217,11 @@ if __name__ == '__main__':
             print("-------------------------------------------------------------------------")
             print(f"Calculating DP-only AUC(epsilon: {epsilon}):")
             dp_auc_calc(data, epsilon=epsilon)
+
+    if len(args.label_path) != 0:
+        run(labels_path=args.label_path, predictions_path=args.prediction_path)
+    else:
+        print("hallo")
+        for labels_path, predictions_path in paths_full.items():
+            run(labels_path, predictions_path)
+
