@@ -62,7 +62,7 @@ def run_experiment_real(data):
     start_sort = time.process_time()
     labels_enc, predictions_enc = sortMergeJoin(left_label, left_pred, right_label, right_pred)
     end_sort = time.process_time()
-    print(f"Sorting finished after {(end_sort-start_sort)/60} minutes.")
+    crypten.print(f"Sorting finished after {(end_sort-start_sort)/60} minutes.")
 
     TP = crypten.cryptensor(torch.tensor(np.zeros(len(predictions_enc))))
     FP = crypten.cryptensor(torch.tensor(np.zeros(len(predictions_enc))))
@@ -117,23 +117,23 @@ def run_experiment_approx(data, thresholds, partitions=1):
             N *= 0.5
             scale *= 2
 
-        return 0.5 * P.reciprocal() * N.reciprocal() * sum * scale.reciprocal() * scale.reciprocal()
+        return 0.5 * P.reciprocal() * N.reciprocal() * sum * scale.reciprocal() * scale.reciprocal() * (1/partitions)
 
 
 
     labels_enc = encrypt_df(labels)
     predictions_enc = encrypt_df(predictions)
 
-    TP = crypten.cryptensor(torch.tensor(np.zeros(len(thresholds))))
-    FP = crypten.cryptensor(torch.tensor(np.zeros(len(thresholds))))
-
-    P = labels_enc.sum()
-    N = len(labels_enc) - P
-
     partial_auc = crypten.cryptensor(torch.tensor([0]))
     stepwidth = int(len(labels_enc)/partitions)
 
     for i in range(partitions):
+        TP = crypten.cryptensor(torch.tensor(np.zeros(len(thresholds))))
+        FP = crypten.cryptensor(torch.tensor(np.zeros(len(thresholds))))
+
+        P = labels_enc[i*stepwidth:(i+1)*stepwidth].sum()
+        N = stepwidth - P
+
         for j in range(len(thresholds)):
             classifications = predictions_enc[i*stepwidth:(i+1)*stepwidth] >= thresholds[j]
 
@@ -145,9 +145,8 @@ def run_experiment_approx(data, thresholds, partitions=1):
 
         partial_auc += compute_AUC(TP, FP, P, N)
 
-    auc = partial_auc.get_plain_text()
-    auc = auc / partitions
-    crypten.print('AUC:', auc)
+    auc = partial_auc
+    crypten.print('AUC:', auc.get_plain_text())
 
      #get the execution time
     end = time.process_time()

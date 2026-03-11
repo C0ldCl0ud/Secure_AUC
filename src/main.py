@@ -30,7 +30,7 @@ paths_full = {
     "../data/labels_100000.txt": "../data/pred_cons_100000.txt",
 }
 paths_demo = {
-    "../data/labels_10000.txt": "../data/pred_cons_10000.txt"
+    "../data/labels_1000.txt": "../data/pred_cons_1000.txt"
 }
 
 def calc_scikit_auc(data):
@@ -67,8 +67,10 @@ if __name__ == '__main__':
         print("Calculating accurate AUC:")
         secure_auc(data)
         print("-------------------------------------------------------------------------")
-        print("Calculating approximate AUC:")
-        secure_auc(data, approx=True, n_steps=100, partitions=10)
+        n_steps = 100
+        partitions = 1
+        print(f"Calculating approximate AUC (n_steps: {n_steps}, partitions: {partitions}):")
+        secure_auc(data, approx=True, n_steps=n_steps, partitions=partitions)
         print("-------------------------------------------------------------------------")
         print("Calculating scikit AUC:")
         calc_scikit_auc(data)

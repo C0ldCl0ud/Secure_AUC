@@ -16,7 +16,7 @@ def split_df(df, number_of_splits):
     return dataframes
 
 def split_shuffled_df(df, number_of_splits):
-    shuffeled = df.sample(frac=1)
+    shuffeled = df.sample(frac=1, random_state=42)
 
     split = split_df(shuffeled, number_of_splits)
     for i in range(number_of_splits):
