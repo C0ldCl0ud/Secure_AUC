@@ -8,6 +8,81 @@ import pandas as pd
 import dp
 
 
+def count_stats(labels, predictions, thresholds, epsilon):
+    TP = np.zeros(len(thresholds))
+    FP = np.zeros(len(thresholds))
+    P = labels.sum() +  + dp.laplace_noise(epsilon, sensitivity=1)
+    N = len(labels) - P
+
+    for i in range(len(thresholds)):
+        classifications = predictions >= thresholds[i]
+
+        TP_class = labels * classifications
+        FP_class = (1 - labels) * classifications
+
+
+        TP[i] = TP_class.sum() + dp.laplace_noise(epsilon, sensitivity=1)
+        FP[i] = FP_class.sum() + dp.laplace_noise(epsilon, sensitivity=1)
+
+    return TP, FP, P, N
+
+def compute_AUC_without_mpc(tp_partial, fp_partial, P_partial, N_partial, epsilon):
+    sum = 0
+
+    tp = np.zeros(len(tp_partial[0]))
+    fp = np.zeros(len(fp_partial[0]))
+    P = 0
+    N = 0
+
+    for i in range(len(tp_partial)):
+        tp += tp_partial[i]
+        fp += fp_partial[i]
+        P += P_partial[i]
+        N += N_partial[i]
+
+    for i in range(1, len(tp)):
+        tpr = tp[i]+tp[i-1]
+        fpr = fp[i]-fp[i-1]
+        sum += tpr * fpr
+
+    factor = 2*N*P
+    auc = sum/factor
+    print(f"AUC (epsilon: {epsilon}): ", auc)
+
+@crypten.mpc.run_multiprocess(world_size=2)
+def calculate_AUC(tp_partial, fp_partial, P_partial, N_partial, epsilon):
+    start = time.process_time()
+    tp = crypten.cryptensor(torch.tensor(np.zeros(len(tp_partial[0]))))
+    fp = crypten.cryptensor(torch.tensor(np.zeros(len(tp_partial[0]))))
+    P = crypten.cryptensor(torch.tensor(0))
+    N = crypten.cryptensor(torch.tensor(0))
+
+    for i in range(len(tp_partial)):
+
+        tp += crypten.cryptensor(torch.tensor(tp_partial[i]))
+        fp += crypten.cryptensor(torch.tensor(fp_partial[i]))
+        P += P_partial[i]
+        N += N_partial[i]
+
+
+    sum = crypten.cryptensor(torch.tensor([0]))
+    for i in range(1, len(tp)):
+        tpr = tp[i] + tp[i - 1]
+        fpr = fp[i] - fp[i - 1]
+        sum += tpr * fpr
+
+    scale = crypten.cryptensor(torch.tensor([1]))
+    for i in range(7):
+        P *= 0.5
+        N *= 0.5
+        scale *= 2
+
+    auc = 0.5 * P.reciprocal() * N.reciprocal() * sum * scale.reciprocal() * scale.reciprocal()
+    crypten.print(f"AUC (epsilon: {epsilon}): ", auc.get_plain_text())
+    stop = time.process_time()
+    crypten.print(f"Total time: {stop - start}")
+
+
 @crypten.mpc.run_multiprocess(world_size=2)
 def run_experiment_real(data, epsilons):
 
@@ -19,13 +94,13 @@ def run_experiment_real(data, epsilons):
                 fpr = fp[n][i]-fp[n][i-1]
                 sum += tpr * fpr
 
-            scale = crypten.cryptensor(torch.tensor([1]))
+            scale = 1
             for i in range(6):
                 P[n] *= 0.5
                 N[n] *= 0.5
                 scale *= 2
 
-            auc = 0.5 * P[n].reciprocal() * N[n].reciprocal()  * sum * scale.reciprocal() * scale.reciprocal()
+            auc = 0.5 * P[n].reciprocal() * N[n].reciprocal()  * sum * (1/scale) * (1/scale)
 
             crypten.print(f"AUC (epsilon: {epsilons[n]}): ", auc.get_plain_text())
 
