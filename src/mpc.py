@@ -9,24 +9,25 @@ import dp
 
 
 @crypten.mpc.run_multiprocess(world_size=2)
-def run_experiment_real(data, epsilon):
+def run_experiment_real(data, epsilons):
 
     def compute_AUC(tp, fp, P, N):
-        sum = crypten.cryptensor(torch.tensor([0]))
-        for i in range(1, len(tp)):
-            tpr = tp[i]+tp[i-1]
-            fpr = fp[i]-fp[i-1]
-            sum += tpr * fpr
+        for n in range(len(tp)):
+            sum = crypten.cryptensor(torch.tensor([0]))
+            for i in range(1, len(tp[n])):
+                tpr = tp[n][i]+tp[n][i-1]
+                fpr = fp[n][i]-fp[n][i-1]
+                sum += tpr * fpr
 
-        scale = crypten.cryptensor(torch.tensor([1]))
-        for i in range(6):
-            P *= 0.5
-            N *= 0.5
-            scale *= 2
+            scale = crypten.cryptensor(torch.tensor([1]))
+            for i in range(6):
+                P *= 0.5
+                N *= 0.5
+                scale *= 2
 
-        auc = 0.5 * P.reciprocal() * N.reciprocal()  * sum * scale.reciprocal() * scale.reciprocal()
+            auc = 0.5 * P[n].reciprocal() * N[n].reciprocal()  * sum * scale.reciprocal() * scale.reciprocal()
 
-        crypten.print("AUC: ", auc.get_plain_text())
+            crypten.print(f"AUC (epsilon: {epsilons[n]}): ", auc.get_plain_text())
 
     def sortMergeJoin(left_label, left_pred, right_label, right_pred):
         predictions = torch.tensor(np.zeros(len(left_pred)+len(right_pred)))
@@ -66,22 +67,37 @@ def run_experiment_real(data, epsilon):
     end_sort = time.process_time()
     crypten.print(f"Sorting finished after {(end_sort-start_sort)/60} minutes.")
 
-    TP = crypten.cryptensor(torch.tensor(np.zeros(len(predictions_enc))))
-    FP = crypten.cryptensor(torch.tensor(np.zeros(len(predictions_enc))))
+    TP_noisy = []
+    FP_noisy = []
 
-    P = labels_enc.sum() + dp.laplace_noise(epsilon, 1)
-    N = len(labels_enc) - P
+    P = labels_enc.sum()
+    P_noisy = []
+    N_noisy = []
+    for epsilon in epsilons:
+        P_noisy.append(P + dp.laplace_noise(epsilon, 1))
+        N_noisy.append(len(labels_enc) - P_noisy[-1])
+        TP_noisy.append(crypten.cryptensor(torch.tensor(np.zeros(len(predictions_enc)))))
+        FP_noisy.append(crypten.cryptensor(torch.tensor(np.zeros(len(predictions_enc)))))
 
-    for i in range(len(predictions_enc)):
+    thresholds = len(predictions_enc)
+    loop_start = time.time()
+    for i in range(thresholds):
+        if i % 1000 == 0 and i != 0:
+            current_time = time.time()
+            time_per_loop = (current_time - loop_start) / i
+            crypten.print(f"{i}/{thresholds} iterations.")
+            crypten.print(f"approximately {((thresholds-i)*time_per_loop)/60} minutes remaining.")
+
         classifications = predictions_enc >= predictions_enc[i]
 
         TP_class = labels_enc * classifications
-        TP[i] =  TP_class.sum() + dp.laplace_noise(epsilon, 1)
+        FP_class = (1 - labels_enc) * classifications
 
-        FP_class = (1 - labels_enc) * classifications #FP
-        FP[i] = FP_class.sum() +dp.laplace_noise(epsilon, 1)
+        for n in range(len(epsilons)):
+            TP_noisy[n][i] = TP_class.sum() + dp.laplace_noise(epsilons[n], 1)
+            FP_noisy[n][i] = FP_class.sum() + dp.laplace_noise(epsilons[n], 1)
 
-    compute_AUC(TP, FP, P, N)
+    compute_AUC(TP_noisy, FP_noisy, P_noisy, N_noisy)
 
     # get the execution time
     end1 = time.process_time()

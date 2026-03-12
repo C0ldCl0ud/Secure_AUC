@@ -221,7 +221,6 @@ if __name__ == '__main__':
     if len(args.label_path) != 0:
         run(labels_path=args.label_path, predictions_path=args.prediction_path)
     else:
-        #print("hallo")
         for labels_path, predictions_path in paths_full.items():
             run(labels_path, predictions_path)
 
