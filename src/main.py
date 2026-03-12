@@ -9,6 +9,8 @@
 
 where does dp fit in?
 """
+import math
+
 import pandas as pd
 
 import auc_analysis
@@ -99,7 +101,8 @@ def secure_auc(data, n_steps=100):
             FP.append(fp)
             P.append(p)
             N.append(n)
-        mpc.calculate_AUC(TP, FP, P, N, epsilon)
+        repetitions = int(-(np.log(1/len(data[0])/2))/np.log(2))
+        mpc.calculate_AUC(TP, FP, P, N, epsilon, repetitions)
 
 def dp_auc_calc(data, n_steps=1000):
     def sortMergeJoin(data):
