@@ -19,6 +19,7 @@ import dp
 import mpc
 import numpy as np
 import time
+import matplotlib.pyplot as plt
 
 import multiprocessing
 multiprocessing.set_start_method("fork", force=True)
@@ -71,11 +72,14 @@ paths_full = {
 paths_demo = {
     "../data/labels_100.txt": "../data/pred_cons_100.txt"
 }
-epsilons = [0, 0.3, 1, 3, 9]
+epsilons = (np.linspace(0,1, 5)**2)*10
+
+steps = np.arange(10, 100, 9)
+
 
 def calc_scikit_auc(data):
     labels, predictions = pd.DataFrame(data.iloc[:, 0]), pd.DataFrame(data.iloc[:, 1])
-    auc_analysis.calculate_auc_scikit(labels, predictions)
+    return auc_analysis.calculate_auc_scikit(labels, predictions)
 
 def load_data(label_path, prediction_path):
     print(f"Lade Daten aus: {label_path}")
@@ -90,6 +94,7 @@ def load_data(label_path, prediction_path):
 
 def secure_auc(data, n_steps=100):
     thresholds = np.linspace(1, 0, n_steps)
+    results = []
     for epsilon in epsilons:
         TP = []
         FP = []
@@ -102,9 +107,11 @@ def secure_auc(data, n_steps=100):
             P.append(p)
             N.append(n)
         repetitions = int(-(np.log(1/len(data[0])/2))/np.log(2))
-        mpc.calculate_AUC(TP, FP, P, N, epsilon, repetitions)
+        results.append(mpc.calculate_AUC(TP, FP, P, N, epsilon, repetitions))
+    return results
 
 def dp_auc_calc(data, n_steps=1000):
+    results = []
     def sortMergeJoin(data):
         if len(data) == 1:
             return data[0][0], data[0][1]
@@ -185,22 +192,23 @@ def dp_auc_calc(data, n_steps=1000):
             P.append(p)
             N.append(n)
 
-        mpc.compute_AUC_without_mpc(TP, FP, P, N, epsilon)
+        results.append(mpc.compute_AUC_without_mpc(TP, FP, P, N, epsilon))
 
     # get the execution time
     end1 = time.process_time()
     time_overall1 = end1 - start1
     print('Execution time:', time_overall1, 'seconds')
+    return results
 
 
 if __name__ == '__main__':
     args = parse_args()
 
-    def run(labels_path, predictions_path):
+    def run(labels_path, predictions_path, noise_repeats=5):
         print("-------------------------------------------------------------------------")
         data = load_data(labels_path, predictions_path)
         print("Calculating scikit AUC:")
-        calc_scikit_auc(data)
+        real_auc = calc_scikit_auc(data)
 
         data = data_loader.split_shuffled_df(data, 2)
 
@@ -210,7 +218,16 @@ if __name__ == '__main__':
 
         print(
             f"Calculating approximate AUC (n_steps: {args.n_steps}):")
-        secure_auc(data, n_steps=args.n_steps)
+        sec = []
+        for i in range(noise_repeats):
+            sec_auc = secure_auc(data)
+            result = np.abs(np.array(sec_auc)[:, 0] - real_auc)
+            sec.append(result)
+        if noise_repeats == 0:
+            for thresholds in steps:
+                sec_auc = secure_auc(data, n_steps=thresholds)
+                result = np.abs(np.array(sec_auc)[:, 0] - real_auc)
+                sec.append(result)
 
         print("-------------------------------------------------------------------------")
         print("DP-ONLY-CALCULATIONS")
@@ -218,11 +235,83 @@ if __name__ == '__main__':
 
         print("-------------------------------------------------------------------------")
         print(f"Calculating DP-only AUC:")
-        dp_auc_calc(data)
+        sec_dp = []
+        for i in range(noise_repeats):
+            dp_auc = dp_auc_calc(data)
+            result = np.abs(dp_auc - real_auc)
+            sec_dp.append(result)
+        if noise_repeats == 0:
+            for thresholds in steps:
+                dp_auc = dp_auc_calc(data, thresholds)
+                result = np.abs(dp_auc - real_auc)
+                sec_dp.append(result)
 
+        return np.asarray(sec), np.asarray(sec_dp)
     if len(args.label_path) != 0:
         run(labels_path=args.label_path, predictions_path=args.prediction_path)
     else:
+        data = []
         for labels_path, predictions_path in paths_full.items():
-            run(labels_path, predictions_path)
+            mpc_data, dp_data = run(labels_path, predictions_path)
+            data.append((epsilons, mpc_data, dp_data))
 
+        for size in data:
+            x = size[0]
+            y1 = size[1]
+            y2 = size[2]
+
+            fig, ax = plt.subplots(2, 1, sharex=True)
+
+            # ---- MPC ----
+            mean = np.mean(y1, axis=0)
+            std = np.std(y1, axis=0)
+
+            ax[0].errorbar(
+                x,
+                mean,
+                yerr=std,
+                marker="o",
+                capsize=4
+            )
+
+            ax[0].set_title("Secure AUC error")
+            ax[0].set_ylim(0, 0.15)
+
+            # ---- DP ----
+            mean = np.mean(y2, axis=0)
+            std = np.std(y2, axis=0)
+
+            ax[1].errorbar(
+                x,
+                mean,
+                yerr=std,
+                marker="o",
+                capsize=4
+            )
+
+            ax[1].set_title("DP AUC error")
+            ax[1].set_ylim(0, 0.07)
+            ax[1].set_xlabel("epsilon")
+
+            plt.tight_layout()
+            plt.show()
+
+        data = []
+        for labels_path, predictions_path in paths_full.items():
+            mpc_data, dp_data = run(labels_path, predictions_path, noise_repeats=0)
+            data.append((steps, mpc_data, dp_data))
+
+        for size in data:
+            x = steps
+            y1 = np.asarray(size[1])
+            y2 = np.asarray(size[2])
+
+            plt.figure()
+            plt.plot(x, y1, marker="o", label="Secure AUC")
+            plt.plot(x, y2, marker="o", label="DP AUC")
+            plt.xlabel("threshold steps")
+            plt.ylabel("absolute error")
+            plt.title("AUC error vs threshold steps")
+            plt.legend()
+            plt.tight_layout()
+            plt.show()

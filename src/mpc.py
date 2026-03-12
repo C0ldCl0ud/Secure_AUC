@@ -47,6 +47,7 @@ def compute_AUC_without_mpc(tp_partial, fp_partial, P_partial, N_partial, epsilo
     factor = 2*N*P
     auc = sum/factor
     print(f"AUC (epsilon: {epsilon}): ", auc)
+    return auc
 
 @crypten.mpc.run_multiprocess(world_size=2)
 def calculate_AUC(tp_partial, fp_partial, P_partial, N_partial, epsilon, scale_exponent):
@@ -84,6 +85,9 @@ def calculate_AUC(tp_partial, fp_partial, P_partial, N_partial, epsilon, scale_e
     crypten.print(f"AUC (epsilon: {epsilon}): ", auc.get_plain_text())
     stop = time.process_time()
     crypten.print(f"Total time: {stop - start}")
+
+    result = auc.get_plain_text()
+    return result.item()
 
 
 
