@@ -1,0 +1,56 @@
+-------------------------------------------------------------------------
+Lade Daten aus: data/labels_100000.txt
+Lade Daten aus: data/pred_cons_100000.txt
+Calculating scikit AUC:
+AUC:  0.9540521968
+-------------------------------------------------------------------------
+MPC-CALCULATIONS
+
+-------------------------------------------------------------------------
+Calculating approximate AUC (epsilon: 0, n_steps: 100, partitions: 1):
+AUC: tensor([-331135.8125])
+Execution time: 534.779346823 seconds
+-------------------------------------------------------------------------
+Calculating approximate AUC (epsilon: 0.3, n_steps: 100, partitions: 1):
+AUC: tensor([190840.5625])
+Execution time: 551.005508663 seconds
+-------------------------------------------------------------------------
+Calculating approximate AUC (epsilon: 1, n_steps: 100, partitions: 1):
+AUC: tensor([-259713.1250])
+Execution time: 585.348416877 seconds
+-------------------------------------------------------------------------
+Calculating approximate AUC (epsilon: 3, n_steps: 100, partitions: 1):
+AUC: tensor([-224868.4375])
+Execution time: 484.383784259 seconds
+-------------------------------------------------------------------------
+Calculating approximate AUC (epsilon: 9, n_steps: 100, partitions: 1):
+AUC: tensor([-285732.7812])
+Execution time: 400.900611282 seconds
+-------------------------------------------------------------------------
+DP-ONLY-CALCULATIONS
+
+-------------------------------------------------------------------------
+Calculating DP-only AUC(epsilon: 0):
+Sorting finished after 0.000766834783333333 minutes.
+AUC:  0.9540521968
+Execution time: 37.394230298000004 seconds
+-------------------------------------------------------------------------
+Calculating DP-only AUC(epsilon: 0.3):
+Sorting finished after 0.0008921503999999913 minutes.
+AUC:  0.9540319189113298
+Execution time: 38.721448825 seconds
+-------------------------------------------------------------------------
+Calculating DP-only AUC(epsilon: 1):
+Sorting finished after 0.0008218022500000662 minutes.
+AUC:  0.9540877217777686
+Execution time: 38.787595284999995 seconds
+-------------------------------------------------------------------------
+Calculating DP-only AUC(epsilon: 3):
+Sorting finished after 0.0008309085166665397 minutes.
+AUC:  0.9540722202926615
+Execution time: 38.493621863 seconds
+-------------------------------------------------------------------------
+Calculating DP-only AUC(epsilon: 9):
+Sorting finished after 0.0008133115666666413 minutes.
+AUC:  0.9540489298944158
+Execution time: 39.304643389000006 seconds

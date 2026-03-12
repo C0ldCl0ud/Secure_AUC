@@ -1,0 +1,15 @@
+-------------------------------------------------------------------------
+Lade Daten aus: data/labels_100000.txt
+Lade Daten aus: data/pred_cons_100000.txt
+Calculating scikit AUC:
+AUC:  0.9540521968
+-------------------------------------------------------------------------
+MPC-CALCULATIONS
+
+-------------------------------------------------------------------------
+Calculating accurate AUC(epsilon: 0):
+Sorting finished after 29.70407700623333 minutes.
+AUC:  tensor([-514289.1562])
+Execution time: 105449.949984659 seconds
+-------------------------------------------------------------------------
+Calculating accurate AUC(epsilon: 0.3):

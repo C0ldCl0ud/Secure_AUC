@@ -1,0 +1,168 @@
+-------------------------------------------------------------------------
+Lade Daten aus: data/labels_100.txt
+Lade Daten aus: data/pred_cons_100.txt
+Calculating scikit AUC:
+AUC:  0.8916
+-------------------------------------------------------------------------
+MPC-CALCULATIONS
+
+-------------------------------------------------------------------------
+Calculating approximate AUC (epsilon: 0, n_steps: 75, partitions: 1):
+AUC: tensor([0.8926])
+Execution time: 2.159120765 seconds
+-------------------------------------------------------------------------
+Calculating approximate AUC (epsilon: 0.3, n_steps: 75, partitions: 1):
+AUC: tensor([0.7964])
+Execution time: 2.255803511 seconds
+-------------------------------------------------------------------------
+Calculating approximate AUC (epsilon: 1, n_steps: 75, partitions: 1):
+AUC: tensor([0.8668])
+Execution time: 2.2165276979999997 seconds
+-------------------------------------------------------------------------
+Calculating approximate AUC (epsilon: 3, n_steps: 75, partitions: 1):
+AUC: tensor([0.8843])
+Execution time: 2.289123023 seconds
+-------------------------------------------------------------------------
+Calculating approximate AUC (epsilon: 9, n_steps: 75, partitions: 1):
+AUC: tensor([0.8899])
+Execution time: 2.330707619 seconds
+-------------------------------------------------------------------------
+DP-ONLY-CALCULATIONS
+
+-------------------------------------------------------------------------
+Calculating DP-only AUC(epsilon: 0):
+Sorting finished after 7.599000000061788e-07 minutes.
+AUC:  0.8916
+Execution time: 0.0010531700000000477 seconds
+-------------------------------------------------------------------------
+Calculating DP-only AUC(epsilon: 0.3):
+Sorting finished after 6.482499999978705e-07 minutes.
+AUC:  0.9821261176243514
+Execution time: 0.001003641000000055 seconds
+-------------------------------------------------------------------------
+Calculating DP-only AUC(epsilon: 1):
+Sorting finished after 5.072166666675315e-07 minutes.
+AUC:  0.913607036011495
+Execution time: 0.0009995890000000784 seconds
+-------------------------------------------------------------------------
+Calculating DP-only AUC(epsilon: 3):
+Sorting finished after 5.005833333330638e-07 minutes.
+AUC:  0.8859058827749028
+Execution time: 0.0011324199999998008 seconds
+-------------------------------------------------------------------------
+Calculating DP-only AUC(epsilon: 9):
+Sorting finished after 5.095166666727972e-07 minutes.
+AUC:  0.8904892964939285
+Execution time: 0.0009322109999998496 seconds
+-------------------------------------------------------------------------
+Lade Daten aus: data/labels_1000.txt
+Lade Daten aus: data/pred_cons_1000.txt
+Calculating scikit AUC:
+AUC:  0.9385880000000001
+-------------------------------------------------------------------------
+MPC-CALCULATIONS
+
+-------------------------------------------------------------------------
+Calculating approximate AUC (epsilon: 0, n_steps: 75, partitions: 1):
+AUC: tensor([0.9385])
+Execution time: 2.6043195199999998 seconds
+-------------------------------------------------------------------------
+Calculating approximate AUC (epsilon: 0.3, n_steps: 75, partitions: 1):
+AUC: tensor([0.9488])
+Execution time: 2.36694178 seconds
+-------------------------------------------------------------------------
+Calculating approximate AUC (epsilon: 1, n_steps: 75, partitions: 1):
+AUC: tensor([0.9403])
+Execution time: 2.579612088 seconds
+-------------------------------------------------------------------------
+Calculating approximate AUC (epsilon: 3, n_steps: 75, partitions: 1):
+AUC: tensor([0.9379])
+Execution time: 2.58242585 seconds
+-------------------------------------------------------------------------
+Calculating approximate AUC (epsilon: 9, n_steps: 75, partitions: 1):
+AUC: tensor([0.9389])
+Execution time: 2.2260733569999998 seconds
+-------------------------------------------------------------------------
+DP-ONLY-CALCULATIONS
+
+-------------------------------------------------------------------------
+Calculating DP-only AUC(epsilon: 0):
+Sorting finished after 5.071333333332243e-06 minutes.
+AUC:  0.938588
+Execution time: 0.009736645999999904 seconds
+-------------------------------------------------------------------------
+Calculating DP-only AUC(epsilon: 0.3):
+Sorting finished after 5.042300000002164e-06 minutes.
+AUC:  0.9285559927521541
+Execution time: 0.011431936999999781 seconds
+-------------------------------------------------------------------------
+Calculating DP-only AUC(epsilon: 1):
+Sorting finished after 4.991833333334306e-06 minutes.
+AUC:  0.9373367638400725
+Execution time: 0.011415307000000041 seconds
+-------------------------------------------------------------------------
+Calculating DP-only AUC(epsilon: 3):
+Sorting finished after 4.988316666665327e-06 minutes.
+AUC:  0.9391485876574791
+Execution time: 0.01148182199999992 seconds
+-------------------------------------------------------------------------
+Calculating DP-only AUC(epsilon: 9):
+Sorting finished after 6.103733333332843e-06 minutes.
+AUC:  0.9389209299737364
+Execution time: 0.012523457999999987 seconds
+-------------------------------------------------------------------------
+Lade Daten aus: data/labels_10000.txt
+Lade Daten aus: data/pred_cons_10000.txt
+Calculating scikit AUC:
+AUC:  0.91140662
+-------------------------------------------------------------------------
+MPC-CALCULATIONS
+
+-------------------------------------------------------------------------
+Calculating approximate AUC (epsilon: 0, n_steps: 75, partitions: 1):
+AUC: tensor([1.0184])
+Execution time: 4.309701107 seconds
+-------------------------------------------------------------------------
+Calculating approximate AUC (epsilon: 0.3, n_steps: 75, partitions: 1):
+AUC: tensor([0.8489])
+Execution time: 4.359084279 seconds
+-------------------------------------------------------------------------
+Calculating approximate AUC (epsilon: 1, n_steps: 75, partitions: 1):
+AUC: tensor([0.8487])
+Execution time: 3.4640058010000003 seconds
+-------------------------------------------------------------------------
+Calculating approximate AUC (epsilon: 3, n_steps: 75, partitions: 1):
+AUC: tensor([0.8487])
+Execution time: 3.259751348 seconds
+-------------------------------------------------------------------------
+Calculating approximate AUC (epsilon: 9, n_steps: 75, partitions: 1):
+AUC: tensor([0.8486])
+Execution time: 3.395557881 seconds
+-------------------------------------------------------------------------
+DP-ONLY-CALCULATIONS
+
+-------------------------------------------------------------------------
+Calculating DP-only AUC(epsilon: 0):
+Sorting finished after 5.019516666666668e-05 minutes.
+AUC:  0.91140662
+Execution time: 0.33393693000000013 seconds
+-------------------------------------------------------------------------
+Calculating DP-only AUC(epsilon: 0.3):
+Sorting finished after 5.228008333333367e-05 minutes.
+AUC:  0.9122974493569751
+Execution time: 0.3579537730000002 seconds
+-------------------------------------------------------------------------
+Calculating DP-only AUC(epsilon: 1):
+Sorting finished after 5.879390000000188e-05 minutes.
+AUC:  0.9123209643457003
+Execution time: 0.3673210059999996 seconds
+-------------------------------------------------------------------------
+Calculating DP-only AUC(epsilon: 3):
+Sorting finished after 5.439666666666732e-05 minutes.
+AUC:  0.9114401294908047
+Execution time: 0.36068456000000015 seconds
+-------------------------------------------------------------------------
+Calculating DP-only AUC(epsilon: 9):
+Sorting finished after 4.849848333332574e-05 minutes.
+AUC:  0.9114305024237176
+Execution time: 0.3822477580000001 seconds
