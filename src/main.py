@@ -80,7 +80,7 @@ paths_full = {
     #"data/labels_100000.txt": "data/pred_cons_100000.txt",
 }
 paths_demo = {
-    "data/labels_100.txt": "data/pred_cons_100.txt"
+    "../data/labels_100.txt": "../data/pred_cons_100.txt"
 }
 
 def calc_scikit_auc(data):
@@ -98,14 +98,17 @@ def load_data(label_path, prediction_path):
 
     return data
 
-def secure_auc(data, epsilon=0, approx=False, n_steps=1000, partitions=1):
+def secure_auc(data, epsilons=None, approx=False, n_steps=1000, partitions=1):
+    if epsilons is None:
+        epsilons = [0]
+
     if approx:
         data = data.sample(frac=1, random_state=42)
         thresholds = np.linspace(1, 0, n_steps)
-        mpc.run_experiment_approx(data, thresholds, epsilon, partitions)
+        mpc.run_experiment_approx(data, thresholds, epsilons, partitions)
     else:
         data = data_loader.split_shuffled_df(data, 2)
-        mpc.run_experiment_real(data, epsilon)
+        mpc.run_experiment_real(data, epsilons)
 
 def dp_auc_calc(data, epsilon=0):
 
@@ -199,16 +202,16 @@ if __name__ == '__main__':
         print("MPC-CALCULATIONS")
         print()
 
-        for epsilon in epsilons:
-            if not args.skip_real:
-                print("-------------------------------------------------------------------------")
-                print(f"Calculating accurate AUC(epsilon: {epsilon}):")
-                secure_auc(data, epsilon=epsilon)
-            if not args.skip_approx:
-                print("-------------------------------------------------------------------------")
-                print(
-                    f"Calculating approximate AUC (epsilon: {epsilon}, n_steps: {args.n_steps}, partitions: {args.partitions}):")
-                secure_auc(data, epsilon=epsilon, approx=True, n_steps=args.n_steps, partitions=args.partitions)
+        if not args.skip_real:
+            print("-------------------------------------------------------------------------")
+            print(f"Calculating accurate AUC:")
+            secure_auc(data, epsilons=epsilons)
+
+        if not args.skip_approx:
+            print("-------------------------------------------------------------------------")
+            print(
+                f"Calculating approximate AUC (n_steps: {args.n_steps}, partitions: {args.partitions}):")
+            secure_auc(data, epsilons=epsilons, approx=True, n_steps=args.n_steps, partitions=args.partitions)
 
         print("-------------------------------------------------------------------------")
         print("DP-ONLY-CALCULATIONS")
@@ -221,6 +224,6 @@ if __name__ == '__main__':
     if len(args.label_path) != 0:
         run(labels_path=args.label_path, predictions_path=args.prediction_path)
     else:
-        for labels_path, predictions_path in paths_full.items():
+        for labels_path, predictions_path in paths_demo.items():
             run(labels_path, predictions_path)
 

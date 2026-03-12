@@ -21,8 +21,8 @@ def run_experiment_real(data, epsilons):
 
             scale = crypten.cryptensor(torch.tensor([1]))
             for i in range(6):
-                P *= 0.5
-                N *= 0.5
+                P[n] *= 0.5
+                N[n] *= 0.5
                 scale *= 2
 
             auc = 0.5 * P[n].reciprocal() * N[n].reciprocal()  * sum * scale.reciprocal() * scale.reciprocal()
@@ -107,7 +107,7 @@ def run_experiment_real(data, epsilons):
 
 
 @crypten.mpc.run_multiprocess(world_size=2)
-def run_experiment_approx(data, thresholds, epsilon, partitions=1):
+def run_experiment_approx(data, thresholds, epsilons, partitions=1):
     start = time.process_time()
 
     labels, predictions = pd.DataFrame(data.iloc[:, 0]), pd.DataFrame(data.iloc[:, 1])
@@ -123,48 +123,73 @@ def run_experiment_approx(data, thresholds, epsilon, partitions=1):
         return x_enc
 
     def compute_AUC(tp, fp, P, N):
-        sum = crypten.cryptensor(torch.tensor([0]))
-        for i in range(1, len(tp)):
-            tpr = tp[i] + tp[i - 1]
-            fpr = fp[i] - fp[i - 1]
-            sum += tpr * fpr
+        auc = []
+        for n in range(len(tp)):
+            sum = crypten.cryptensor(torch.tensor([0]))
+            for i in range(1, len(tp[n])):
+                tpr = tp[n][i]+tp[n][i-1]
+                fpr = fp[n][i]-fp[n][i-1]
+                sum += tpr * fpr
 
-        scale = crypten.cryptensor(torch.tensor([1]))
-        for i in range(6):
-            P *= 0.5
-            N *= 0.5
-            scale *= 2
+            scale = crypten.cryptensor(torch.tensor([1]))
+            for i in range(6):
+                P[n] *= 0.5
+                N[n] *= 0.5
+                scale *= 2
 
-        return 0.5 * P.reciprocal() * N.reciprocal() * sum * scale.reciprocal() * scale.reciprocal() * (1/partitions)
+            auc.append(0.5 * P[n].reciprocal() * N[n].reciprocal() * sum * scale.reciprocal() * scale.reciprocal() * (1/partitions))
+        return auc
 
 
 
     labels_enc = encrypt_df(labels)
     predictions_enc = encrypt_df(predictions)
 
-    partial_auc = crypten.cryptensor(torch.tensor([0]))
+    partial_auc = []
     stepwidth = int(len(labels_enc)/partitions)
 
+    loop_start = time.time()
     for i in range(partitions):
-        TP = crypten.cryptensor(torch.tensor(np.zeros(len(thresholds))))
-        FP = crypten.cryptensor(torch.tensor(np.zeros(len(thresholds))))
 
-        P = labels_enc[i*stepwidth:(i+1)*stepwidth].sum() + dp.laplace_noise(epsilon, 1)
+        if i != 0:
+            current_time = time.time()
+            time_per_loop = (current_time - loop_start) / i
+            crypten.print(f"{i}/{partitions} iterations.")
+            crypten.print(f"approximately {((partitions-i)*time_per_loop)/60} minutes remaining.")
+
+        P = labels_enc[i*stepwidth:(i+1)*stepwidth].sum()
         N = stepwidth - P
+
+        TP_noisy = []
+        FP_noisy = []
+        P_noisy = []
+        N_noisy = []
+        for epsilon in epsilons:
+            P_noisy.append(P + dp.laplace_noise(epsilon, 1))
+            N_noisy.append(stepwidth - P_noisy[-1])
+            TP_noisy.append(crypten.cryptensor(torch.tensor(np.zeros(len(thresholds)))))
+            FP_noisy.append(crypten.cryptensor(torch.tensor(np.zeros(len(thresholds)))))
 
         for j in range(len(thresholds)):
             classifications = predictions_enc[i*stepwidth:(i+1)*stepwidth] >= thresholds[j]
 
             TP_class = labels_enc[i*stepwidth:(i+1)*stepwidth] * classifications
-            TP[j] = TP_class.sum() + dp.laplace_noise(epsilon, 1)
-
             FP_class = (1 - labels_enc[i*stepwidth:(i+1)*stepwidth]) * classifications
-            FP[j] = FP_class.sum() + dp.laplace_noise(epsilon, 1)
 
-        partial_auc += compute_AUC(TP, FP, P, N)
+            for n in range(len(epsilons)):
+                TP_noisy[n][j] = TP_class.sum() + dp.laplace_noise(epsilons[n], 1)
+                FP_noisy[n][j] = FP_class.sum() + dp.laplace_noise(epsilons[n], 1)
 
-    auc = partial_auc
-    crypten.print('AUC:', auc.get_plain_text())
+        auc = compute_AUC(TP_noisy, FP_noisy, P_noisy, N_noisy)
+        partial_auc.append(auc)
+
+    sum = crypten.cryptensor(torch.tensor(np.zeros(len(epsilons))))
+    for j in range(partitions):
+        for k in range(len(epsilons)):
+            sum[k] += partial_auc[j][k][0]
+
+    for k in range(len(epsilons)):
+        crypten.print(f'AUC (epsilon: {epsilons[k]}):', sum[k].get_plain_text())
 
      #get the execution time
     end = time.process_time()
