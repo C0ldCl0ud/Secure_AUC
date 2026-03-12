@@ -29,7 +29,27 @@ def run_experiment_real(data, epsilons):
 
             crypten.print(f"AUC (epsilon: {epsilons[n]}): ", auc.get_plain_text())
 
-    def sortMergeJoin(left_label, left_pred, right_label, right_pred):
+    def sortMergeJoin(data):
+        if len(data) == 1:
+            return data[0][0], data[0][1]
+
+        left = data.pop(0)
+        right = data.pop(0)
+
+        if isinstance(left, pd.DataFrame):
+            left_label = crypten.cryptensor(torch.tensor(left.iloc[:, 0].tolist()))
+            left_pred = crypten.cryptensor(torch.tensor(left.iloc[:, 1].tolist()))
+        else:
+            left_label = left[0]
+            left_pred = left[1]
+
+        if isinstance(right, pd.DataFrame):
+            right_label = crypten.cryptensor(torch.tensor(right.iloc[:, 0].tolist()))
+            right_pred = crypten.cryptensor(torch.tensor(right.iloc[:, 1].tolist()))
+        else:
+            right_label = right[0]
+            right_pred = right[1]
+
         predictions = torch.tensor(np.zeros(len(left_pred)+len(right_pred)))
         predictions = crypten.cryptensor(predictions)
         labels = torch.tensor(np.zeros(len(predictions)))
@@ -50,20 +70,13 @@ def run_experiment_real(data, epsilons):
             right_index += (1 - compare)
             counter += 1
 
-        return labels, predictions
+        data.append((labels, predictions))
+        return sortMergeJoin(data)
 
     start1 = time.process_time()
 
-    left = data[0]
-    right = data[1]
-
-    left_label = crypten.cryptensor(torch.tensor(left.iloc[:, 0].tolist()))
-    right_label = crypten.cryptensor(torch.tensor(right.iloc[:, 0].tolist()))
-    left_pred = crypten.cryptensor(torch.tensor(left.iloc[:, 1].tolist()))
-    right_pred = crypten.cryptensor(torch.tensor(right.iloc[:, 1].tolist()))
-
     start_sort = time.process_time()
-    labels_enc, predictions_enc = sortMergeJoin(left_label, left_pred, right_label, right_pred)
+    labels_enc, predictions_enc = sortMergeJoin(data)
     end_sort = time.process_time()
     crypten.print(f"Sorting finished after {(end_sort-start_sort)/60} minutes.")
 
