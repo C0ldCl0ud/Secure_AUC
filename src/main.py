@@ -234,19 +234,19 @@ def vary_thresholds():
                 steps,
                 secure_mpc_auc[:, j],
                 marker="o",
-                label=f"Secure AUC (eps={e})"
+                label=f"MPC AUC"
             )
             plt.plot(
                 steps,
                 secure_dp_auc[:, j],
                 marker="x",
                 linestyle="--",
-                label=f"DP AUC (eps={e})"
+                label=f"Noiseless AUC"
             )
 
         plt.xlabel("threshold steps")
         plt.ylabel("absolute error")
-        plt.title(f"AUC error vs threshold steps (dataset {dataset[i]})")
+        plt.title(f"AUC error vs threshold steps ({dataset[i]})")
 
         if i < len(y_max):
             plt.ylim(0, y_max[i])
@@ -331,69 +331,84 @@ def vary_epsilon(noise_samples=60):
         plt.close()
 
 def vary_parties():
-
     threshold_steps = 100
-    party_counts = [2, 3, 4, 6, 8]      # adapt as needed
-    selected_epsilons = [0, 0.3, 1.0, 3, 9] # adapt as needed
+    party_counts = [2, 3, 4, 6, 8]
+    selected_epsilons = [0, 0.3, 1.0, 3, 9]
+
+    noise_repeats = 20
 
     for i, (labels, predictions) in enumerate(paths):
         data = load_data(labels, predictions)
         real_auc = float(calc_scikit_auc(data))
 
-        mpc_errors = []
-        dp_errors = []
+        # store results by epsilon
+        mpc_means = []
+        mpc_stds = []
+        dp_means = []
+        dp_stds = []
 
         for e in selected_epsilons:
-            mpc_eps_errors = []
-            dp_eps_errors = []
+            mpc_eps_means = []
+            mpc_eps_stds = []
+            dp_eps_means = []
+            dp_eps_stds = []
 
             for p in party_counts:
-                # adapt this split to however your code expects party-wise data
+                mpc_all_errors = []
+                dp_all_errors = []
+
+
                 split_data = data_loader.split_shuffled_df(data, p)
 
-                mpc_val = to_scalar(secure_auc(split_data, threshold_steps, e))
-                dp_val = to_scalar(dp_auc_calc(split_data, threshold_steps, e))
+                for _ in range(noise_repeats):
+                    mpc_val = float(to_scalar(secure_auc(split_data, threshold_steps, e)))
+                    dp_val = float(to_scalar(dp_auc_calc(split_data, threshold_steps, e)))
 
-                mpc_eps_errors.append(abs(mpc_val - real_auc))
-                dp_eps_errors.append(abs(dp_val - real_auc))
+                    mpc_all_errors.append(abs(mpc_val - real_auc))
+                    dp_all_errors.append(abs(dp_val - real_auc))
 
-            mpc_errors.append(mpc_eps_errors)
-            dp_errors.append(dp_eps_errors)
+                mpc_eps_means.append(np.mean(mpc_all_errors))
+                mpc_eps_stds.append(np.std(mpc_all_errors))
+                dp_eps_means.append(np.mean(dp_all_errors))
+                dp_eps_stds.append(np.std(dp_all_errors))
 
-        x = np.arange(len(party_counts))
+            mpc_means.append(mpc_eps_means)
+            mpc_stds.append(mpc_eps_stds)
+            dp_means.append(dp_eps_means)
+            dp_stds.append(dp_eps_stds)
 
-        n_eps = len(selected_epsilons)
-        n_series = 2 * n_eps
-        width = 0.8 / n_series  # total group width stays reasonable
+        fig, axes = plt.subplots(1, 2, figsize=(12, 5), sharey=True)
 
-        plt.figure(figsize=(10, 6))
-
-        series_idx = 0
         for j, e in enumerate(selected_epsilons):
-            # center all bars around x
-            offset_mpc = (series_idx - (n_series - 1) / 2) * width
-            plt.bar(
-                x + offset_mpc,
-                mpc_errors[j],
-                width=width,
-                label=f"MPC ε={e}"
+            axes[0].errorbar(
+                party_counts,
+                mpc_means[j],
+                yerr=mpc_stds[j],
+                marker='o',
+                capsize=3,
+                label=f"ε={e}"
             )
-            series_idx += 1
-
-            offset_dp = (series_idx - (n_series - 1) / 2) * width
-            plt.bar(
-                x + offset_dp,
-                dp_errors[j],
-                width=width,
-                label=f"DP ε={e}"
+            axes[1].errorbar(
+                party_counts,
+                dp_means[j],
+                yerr=dp_stds[j],
+                marker='o',
+                capsize=3,
+                label=f"ε={e}"
             )
-            series_idx += 1
 
-        plt.xticks(x, party_counts)
-        plt.xlabel("number of parties")
-        plt.ylabel("absolute error")
-        plt.title("AUC error vs number of parties")
-        plt.legend()
+        axes[0].set_title("MPC")
+        axes[1].set_title("DP")
+
+        for ax in axes:
+            ax.set_xlabel("number of parties")
+            ax.set_xticks(party_counts)
+            ax.grid(True, alpha=0.3)
+
+        axes[0].set_ylabel("mean absolute error")
+        fig.suptitle(f"AUC error vs number of parties ({dataset[i]})")
+        axes[1].legend(title="privacy budget")
+
         plt.tight_layout()
         plt.savefig(f"../plots/auc_parties_{dataset[i]}.png", dpi=300)
         plt.close()
@@ -401,101 +416,6 @@ def vary_parties():
 if __name__ == '__main__':
     args = parse_args()
 
-    #vary_thresholds()
+    vary_thresholds()
     #vary_epsilon()
-    vary_parties()
-
-
-#    def run(labels_path, predictions_path, noise_repeats=5):
-#        print("-------------------------------------------------------------------------")
-#        data = load_data(labels_path, predictions_path)
-#        print("Calculating scikit AUC:")
-#        real_auc = calc_scikit_auc(data)
-#
-#        data = data_loader.split_shuffled_df(data, 2)
-#
-#        print("-------------------------------------------------------------------------")
-#        print("MPC-CALCULATIONS")
-#        print()
-
-#        print(
-#            f"Calculating approximate AUC (n_steps: {args.n_steps}):")
-#        sec = []
-#        for i in range(noise_repeats):
-#            sec_auc = secure_auc(data)
-#            result = np.abs(np.array(sec_auc)[:, 0] - real_auc)
-#            sec.append(result)
-#        if noise_repeats == 0:
-#            for thresholds in steps:
-#                sec_auc = secure_auc(data, n_steps=thresholds)
-#                result = np.abs(np.array(sec_auc)[:, 0] - real_auc)
-#                sec.append(result)
-
-#        print("-------------------------------------------------------------------------")
-#        print("DP-ONLY-CALCULATIONS")
-#        print()
-
-#        print("-------------------------------------------------------------------------")
-#        print(f"Calculating DP-only AUC:")
-#        sec_dp = []
-#        for i in range(noise_repeats):
-#            dp_auc = dp_auc_calc(data)
-#            result = np.abs(dp_auc - real_auc)
-#            sec_dp.append(result)
-#        if noise_repeats == 0:
-#            for thresholds in steps:
-#                dp_auc = dp_auc_calc(data, thresholds)
-#                result = np.abs(dp_auc - real_auc)
-#                sec_dp.append(result)
-
-#        return np.asarray(sec), np.asarray(sec_dp)
-#    if len(args.label_path) != 0:
-#        run(labels_path=args.label_path, predictions_path=args.prediction_path)
-#    else:
-#        data = []
-#        for labels_path, predictions_path in paths_full.items():
-#            mpc_data, dp_data = run(labels_path, predictions_path)
-#            data.append((epsilons, mpc_data, dp_data))
-
-#        for size in data:
-#            x = size[0]
-#            y1 = size[1]
-#            y2 = size[2]
-
-#            fig, ax = plt.subplots(2, 1, sharex=True)
-
-            # ---- MPC ----
-#            mean = np.mean(y1, axis=0)
-#            std = np.std(y1, axis=0)
-
-#            ax[0].errorbar(
-#                x,
-#                mean,
-#                yerr=std,
-#                marker="o",
-#                capsize=4
-#            )
-
-#            ax[0].set_title("Secure AUC error")
-#            ax[0].set_ylim(0, 0.15)
-
-#            # ---- DP ----
-#            mean = np.mean(y2, axis=0)
-#            std = np.std(y2, axis=0)
-
-#            ax[1].errorbar(
-#                x,
-#                mean,
-#                yerr=std,
-#                marker="o",
-#                capsize=4
-#            )
-
-#            ax[1].set_title("DP AUC error")
-#            ax[1].set_ylim(0, 0.07)
-#            ax[1].set_xlabel("epsilon")
-
-#            plt.tight_layout()
-#            plt.show()
-
-
+    #vary_parties()
