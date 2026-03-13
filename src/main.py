@@ -58,14 +58,14 @@ def parse_args():
 #print(f"Using device: {device}")
 
 paths = [
-    ["../data/labels_100.txt", "../data/pred_cons_100.txt"],
-    ["../data/labels_1000.txt", "../data/pred_cons_1000.txt"],
-    ["../data/labels_10000.txt", "../data/pred_cons_10000.txt"],
-    ["../data/labels_100000.txt", "../data/pred_cons_100000.txt"]
+    ["data/labels_100.txt", "data/pred_cons_100.txt"],
+    ["data/labels_1000.txt", "data/pred_cons_1000.txt"],
+    ["data/labels_10000.txt", "data/pred_cons_10000.txt"],
+    ["data/labels_100000.txt", "data/pred_cons_100000.txt"]
 ]
 dataset = [100, 1000, 10000, 100000]
 
-epsilons = (np.linspace(0,1, 20)**2)*10
+epsilons = (np.linspace(0,1, 10)**2)*10
 
 #steps = [8,32,128]
 steps = [2,4,5,6,7,8,10,12,14,16,20,24,28,32,40,48,56,64,80,96,112,128]
@@ -253,11 +253,12 @@ def vary_thresholds():
 
         plt.legend()
         plt.tight_layout()
-        plt.savefig(f"../plots/auc_thresholds_{dataset[i]}.png", dpi=300)
+        plt.savefig(f"plots/auc_thresholds_{dataset[i]}.png", dpi=300)
         plt.close()
 
 
 def vary_epsilon(noise_samples=60):
+    ylim = [0.2, 0.1, 0.01, 0.0025]
     for i, (labels, predictions) in enumerate(paths):
         data = load_data(labels, predictions)
         real_auc = float(calc_scikit_auc(data))
@@ -312,11 +313,12 @@ def vary_epsilon(noise_samples=60):
 
         plt.xticks(
             positions_mpc + 0.35,
-            [str(e) for e in epsilons]
+            [str(round(e, 2)) for e in epsilons]
         )
 
         plt.xlabel("epsilon")
         plt.ylabel("absolute error")
+        plt.ylim(0, ylim[i])
         plt.title(f"AUC error distribution vs epsilon ({dataset[i]})")
 
         legend_handles = [
@@ -327,7 +329,7 @@ def vary_epsilon(noise_samples=60):
         plt.legend(handles=legend_handles)
 
         plt.tight_layout()
-        plt.savefig(f"../plots/auc_epsilon_boxplot_{dataset[i]}.png", dpi=300)
+        plt.savefig(f"plots/auc_epsilon_boxplot_{dataset[i]}.png", dpi=300)
         plt.close()
 
 def vary_parties():
@@ -395,15 +397,15 @@ def vary_parties():
         plt.title("AUC error vs number of parties")
         plt.legend()
         plt.tight_layout()
-        plt.savefig(f"../plots/auc_parties_{dataset[i]}.png", dpi=300)
+        plt.savefig(f"plots/auc_parties_{dataset[i]}.png", dpi=300)
         plt.close()
 
 if __name__ == '__main__':
     args = parse_args()
 
     #vary_thresholds()
-    #vary_epsilon()
-    vary_parties()
+    vary_epsilon()
+    #vary_parties()
 
 
 #    def run(labels_path, predictions_path, noise_repeats=5):
